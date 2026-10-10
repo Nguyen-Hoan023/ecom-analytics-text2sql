@@ -1,6 +1,6 @@
 # Giai đoạn 1 — Hiểu nguồn dữ liệu và chốt data contract
 
-**Trạng thái:** đã đo profile nguồn, join exceptions và các domain category/segment/market. Ngày chạy profile chưa được ghi; metric contract và một số giả định nghiệp vụ vẫn cần chốt trước khi đóng M1.
+**Trạng thái:** đã đo profile nguồn, join exceptions và các domain category/segment/market. Mốc profile được ghi nhận là `2026-10-10 14:25:29.4548071 UTC`; metric contract và một số giả định nghiệp vụ vẫn cần chốt trước khi đóng M1.
 
 ## 1. Mục tiêu và phạm vi
 
@@ -29,9 +29,9 @@ Trang Xóm Dataset hiện liệt kê 4 bảng, tổng 100.889 dòng và 34 cột
 
 Schema đánh dấu customer_id, row_id, product_code và region_code là NOT NULL, nhưng không khai báo foreign key trực tiếp. Vì vậy, tính duy nhất của khóa, grain của bảng giao dịch và các quan hệ bên dưới vẫn là giả thuyết cho đến khi chạy profile.
 
-### Baseline đã đo từ lần profile đầu
+### Baseline profile
 
-Ngày chạy chưa được ghi lại trong kết quả gửi qua chat; cần bổ sung trước khi coi đây là snapshot có thể đối chiếu lâu dài.
+Mốc chạy profile được ghi nhận: **2026-10-10 14:25:29.4548071 UTC**. Các aggregate dưới đây là những kết quả đã được chia sẻ; nếu lần chạy có timestamp này cho kết quả khác, cập nhật các giá trị theo output mới để chúng cùng thuộc một snapshot.
 
 | Bảng / phép đo | Kết quả quan sát |
 |---|---|
@@ -142,8 +142,8 @@ Chỉ điền cột Quan sát sau khi chạy SQL profile. “Đang chờ” khô
 
 | Kiểm tra | Tiêu chí / quyết định | Quan sát |
 |---|---|---|
-| Schema thực tế | Tên cột/nullability khớp; decimal(10,2), tọa độ decimal(10,6) | Đạt; cần bổ sung ngày profile |
-| Số dòng | customer 17.415; sales 51.290; product 28.356; region 3.828; tổng 100.889 | Đạt; ngày profile chưa ghi |
+| Schema thực tế | Tên cột/nullability khớp; decimal(10,2), tọa độ decimal(10,6) | Đạt; mốc profile 2026-10-10 14:25 UTC |
+| Số dòng | customer 17.415; sales 51.290; product 28.356; region 3.828; tổng 100.889 | Đạt theo output đã chia sẻ; mốc profile 2026-10-10 14:25 UTC |
 | Khóa ứng viên | 4 khóa có non-null = distinct = row count; duplicate queries rỗng | Đạt theo output đã gửi |
 | Grain ecom_sales | 51.290 dòng, 25.728 đơn, 12.793 đơn nhiều dòng, tối đa 14 dòng/đơn | Đạt cho grain; row_id được xác nhận duy nhất |
 | Referential integrity | Biết null/orphan cho 3 quan hệ | Đã đo: customer 0/0; product 0/2; region 0/2 (null/orphan); orphan union 3 dòng, sales 506, profit 253 |
@@ -158,8 +158,8 @@ Chỉ điền cột Quan sát sau khi chạy SQL profile. “Đang chờ” khô
 
 | Ngày | Câu hỏi / phát hiện | Bằng chứng | Quyết định / tác động |
 |---|---|---|---|
-| Chưa ghi ngày | Profile lần đầu: có 3 dòng fact duy nhất thiếu dimension match | Query 9a: product PPR000002/PPR000010; region RRR0001; 1 dòng trùng ở cả hai nhóm; sales ảnh hưởng 506, profit 253 | Không tự map mã; giữ fact và khóa nguồn, dùng left join/nhãn unmatched ở Silver/Gold để tránh mất số liệu. |
-| Chưa ghi ngày | Domain market/region của nguồn live đã được gửi | 23 cặp market-region; Africa 321, Asia Pacific 931, Europe 1.281, LATAM 645, USCA 650; tổng 3.828; mỗi cặp không có trùng region_code | Giữ nhãn và cấp địa lý đúng như nguồn; chỉ tạo mapping sang context/reference nếu xác minh được quy tắc nghiệp vụ. |
+| 2026-10-10 | Profile ghi nhận 3 dòng fact duy nhất thiếu dimension match | Query 9a: product PPR000002/PPR000010; region RRR0001; 1 dòng trùng ở cả hai nhóm; sales ảnh hưởng 506, profit 253 | Không tự map mã; giữ fact và khóa nguồn, dùng left join/nhãn unmatched ở Silver/Gold để tránh mất số liệu. |
+| 2026-10-10 | Domain market/region của nguồn live đã được gửi | 23 cặp market-region; Africa 321, Asia Pacific 931, Europe 1.281, LATAM 645, USCA 650; tổng 3.828; mỗi cặp không có trùng region_code | Giữ nhãn và cấp địa lý đúng như nguồn; chỉ tạo mapping sang context/reference nếu xác minh được quy tắc nghiệp vụ. |
 
 ## 8. Điều kiện hoàn thành giai đoạn 1
 

@@ -12,6 +12,9 @@ emails and raw customer samples so its result sets are safe to summarize.
 
 SET NOCOUNT ON;
 
+-- Capture the profile start time so later runs can be compared consistently.
+SELECT SYSUTCDATETIME() AS profile_run_at_utc;
+
 -- 1. Actual source metadata: use this to detect schema drift before ingestion.
 SELECT
     TABLE_SCHEMA,

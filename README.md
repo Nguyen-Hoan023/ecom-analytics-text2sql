@@ -11,7 +11,7 @@ A learning project to rebuild an end-to-end analytics pipeline from the Xóm E-C
 
 ## Current status
 
-**Phase 1 — source understanding and data contract:** source profile, observed market/region domain, and join exceptions are recorded in the docs. Customer joins match; three unique sales rows are missing product/region matches (sales 506, profit 253). The profile date is unknown, and metric definitions/remaining business assumptions still need to be settled before closing this phase.
+**Phase 1 — source understanding and data contract:** source profile, observed market/region domain, and join exceptions are recorded in the docs. The latest profile run is recorded at `2026-10-10 14:25:29.4548071 UTC`. Customer joins match; three unique sales rows are missing product/region matches (sales 506, profit 253). Metric definitions and remaining business assumptions still need to be settled before closing this phase.
 
 Start here: [Phase 1: Data understanding](docs/phase-01-data-understanding.md) and [read-only SQL profile](sql/phase_01_profile.sql).
 
