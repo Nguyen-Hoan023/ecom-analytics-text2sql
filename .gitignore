@@ -1,0 +1,36 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Local warehouse files and temporary database artifacts
+*.duckdb
+*.duckdb.wal
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated dbt/Airflow artifacts and logs
+target/
+dbt_model/target/
+dbt_model/logs/
+logs/
+airflow.db
+airflow.cfg
+
+# Editor / OS noise
+.idea/
+.vscode/*.code-workspace
+.DS_Store
+Thumbs.db
