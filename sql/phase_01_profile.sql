@@ -200,40 +200,45 @@ SELECT
 FROM e_commerce.region;
 
 -- 9. Referential-integrity coverage at the fact-row grain.
--- NOT EXISTS prevents duplicate dimension keys from inflating these counts.
+-- Deduplicate dimension keys before joining so duplicate dimension rows cannot
+-- multiply fact rows. Aggregate the flags after the joins for SQL Server compatibility.
+;WITH join_checks AS (
+    SELECT
+        'customer_id -> customer.customer_id' AS relationship,
+        CASE WHEN s.customer_id IS NULL THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END AS null_fact_key,
+        CASE WHEN s.customer_id IS NOT NULL AND c.customer_id IS NULL THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END AS orphan_fact
+    FROM e_commerce.ecom_sales AS s
+    LEFT JOIN (SELECT DISTINCT customer_id FROM e_commerce.customer) AS c
+        ON c.customer_id = s.customer_id
+
+    UNION ALL
+
+    SELECT
+        'product_code -> product.product_code',
+        CASE WHEN s.product_code IS NULL THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END,
+        CASE WHEN s.product_code IS NOT NULL AND p.product_code IS NULL THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END
+    FROM e_commerce.ecom_sales AS s
+    LEFT JOIN (SELECT DISTINCT product_code FROM e_commerce.product) AS p
+        ON p.product_code = s.product_code
+
+    UNION ALL
+
+    SELECT
+        'region_code -> region.region_code',
+        CASE WHEN s.region_code IS NULL THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END,
+        CASE WHEN s.region_code IS NOT NULL AND r.region_code IS NULL THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END
+    FROM e_commerce.ecom_sales AS s
+    LEFT JOIN (SELECT DISTINCT region_code FROM e_commerce.region) AS r
+        ON r.region_code = s.region_code
+)
 SELECT
-    'customer_id -> customer.customer_id' AS relationship,
+    relationship,
     COUNT_BIG(*) AS sales_rows,
-    SUM(CASE WHEN s.customer_id IS NULL THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END) AS null_fact_key_rows,
-    SUM(CASE WHEN s.customer_id IS NOT NULL
-                  AND NOT EXISTS (
-                      SELECT 1 FROM e_commerce.customer AS c
-                      WHERE c.customer_id = s.customer_id
-                  )
-             THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END) AS orphan_fact_rows
-FROM e_commerce.ecom_sales AS s
-UNION ALL
-SELECT
-    'product_code -> product.product_code', COUNT_BIG(*),
-    SUM(CASE WHEN s.product_code IS NULL THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END),
-    SUM(CASE WHEN s.product_code IS NOT NULL
-                  AND NOT EXISTS (
-                      SELECT 1 FROM e_commerce.product AS p
-                      WHERE p.product_code = s.product_code
-                  )
-             THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END)
-FROM e_commerce.ecom_sales AS s
-UNION ALL
-SELECT
-    'region_code -> region.region_code', COUNT_BIG(*),
-    SUM(CASE WHEN s.region_code IS NULL THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END),
-    SUM(CASE WHEN s.region_code IS NOT NULL
-                  AND NOT EXISTS (
-                      SELECT 1 FROM e_commerce.region AS r
-                      WHERE r.region_code = s.region_code
-                  )
-             THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END)
-FROM e_commerce.ecom_sales AS s;
+    SUM(null_fact_key) AS null_fact_key_rows,
+    SUM(orphan_fact) AS orphan_fact_rows
+FROM join_checks
+GROUP BY relationship
+ORDER BY relationship;
 
 -- 10. Order grain and line-loss vs order-loss distinction.
 ;WITH order_summary AS (

@@ -1,6 +1,6 @@
 # Giai đoạn 1 — Hiểu nguồn dữ liệu và chốt data contract
 
-**Trạng thái:** đã chuẩn bị tài liệu và SQL profile; chưa chạy truy vấn trên SQL Server thật.
+**Trạng thái:** đã chạy profile nguồn lần đầu; còn thiếu ngày chạy, market-domain output và join coverage để đóng M1.
 
 ## 1. Mục tiêu và phạm vi
 
@@ -29,6 +29,26 @@ Trang Xóm Dataset hiện liệt kê 4 bảng, tổng 100.889 dòng và 34 cột
 
 Schema đánh dấu customer_id, row_id, product_code và region_code là NOT NULL, nhưng không khai báo foreign key trực tiếp. Vì vậy, tính duy nhất của khóa, grain của bảng giao dịch và các quan hệ bên dưới vẫn là giả thuyết cho đến khi chạy profile.
 
+### Baseline đã đo từ lần profile đầu
+
+Ngày chạy chưa được ghi lại trong kết quả gửi qua chat; cần bổ sung trước khi coi đây là snapshot có thể đối chiếu lâu dài.
+
+| Bảng / phép đo | Kết quả quan sát |
+|---|---|
+| Row count | customer 17.415; ecom_sales 51.290; product 28.356; region 3.828. Tổng 100.889, khớp tổng số dòng công bố. |
+| Schema | Tên cột và nullability khớp schema công bố. sales/discount/profit là decimal(10,2); tọa độ là decimal(10,6). |
+| Candidate keys | Cả 4 khóa đều có non-null = distinct = row count; các query duplicate không trả dòng nào. |
+| ecom_sales grain | 51.290 dòng; 25.728 order_id khác null; không null order_id/order_date. Có 12.935 đơn một dòng, 12.793 đơn nhiều dòng; tối đa 14 dòng/đơn. |
+| Số đo giao dịch | quantity: 1–20; sales: 2–3.940; profit: -1.746 đến 1.820. Các cột quantity/sales/profit không có null; không có quantity hoặc sales bằng 0/âm. Có 11.041 dòng profit âm. |
+| Discount | Không có null; min 0, max 0,85, avg 0,142883. Kết quả phù hợp với cách lưu theo tỷ lệ 0–1; trung bình tương đương khoảng 14,29%, tối đa 85%. Có 29.470 dòng discount bằng 0. |
+| Segment | Consumer: 26.518 dòng, sales 2.146.780, profit 365.377,50; Corporate: 15.429, sales 3.840.707, profit 608.523,36; Self-Employed: 9.343, sales 530.187, profit 91.512,72. Cộng theo segment: sales 6.517.674, profit 1.065.413,58. |
+| Lỗ theo đơn | 5.496/25.728 đơn có tổng profit âm. Không có đơn thiếu profit hoặc thiếu segment; không có order chứa nhiều segment. |
+| Thời gian | Từ 2020-01-01 đến 2023-12-31; kết quả có đủ 48 tháng liên tục. |
+| customer.gender | Kết quả được gửi cho thấy 124/17.415 giá trị null (khoảng 0,71%). Cần xác nhận đây là cột duy nhất có null trong output đầy đủ. |
+| Join coverage | Chưa xác nhận: nhóm query 9 báo lỗi, cần chạy lại sau khi sửa SQL. |
+
+Product có 28.356 product_code duy nhất. Các danh mục quan sát là Body care, Face care, Hair care, Home and Accessories, Make up; đây không phải Office Supplies/Furniture/Technology như mô tả context.
+
 ### Danh mục cột
 
 - customer: customer_id, first_name, last_name, birth_date, marital_status, gender, email_address, annual_income, education_level, occupation, home_owner.
@@ -38,10 +58,12 @@ Schema đánh dấu customer_id, row_id, product_code và region_code là NOT NU
 
 ## 3. Các điểm lệch cần giải quyết trước khi modeling
 
-1. context.md của repo tham khảo mô tả segment/địa chỉ như thuộc tính customer, nhưng schema customer được công bố không có hai thông tin đó. Segment nằm trên ecom_sales; địa lý được thể hiện qua region và region_code của giao dịch. Không tự tạo hoặc gán ngược thuộc tính customer.
-2. Trang schema ghi product có khoảng 28,4K dòng, trong khi business context nói khoảng 1.900 SKU. Số dòng không đồng nghĩa số mã sản phẩm duy nhất. Cần so sánh COUNT(*) với COUNT(DISTINCT product_code), kiểm tra khóa trùng và xác định đây là dimension nhiều bản ghi, snapshot khác nhau hay tài liệu chưa đồng bộ.
-3. Các log và tổng doanh thu/lợi nhuận trong README reference là kết quả của một lần chạy cụ thể, không phải baseline hiện tại. Ghi lại ngày profile, số dòng chính xác và tổng số đo từ chính tài khoản dữ liệu của dự án này.
-4. Business context nói có discount cao và đơn âm lợi nhuận. Đây là giả thuyết cần đo, không phải kết quả để sao chép vào phân tích cuối.
+1. context.md của repo tham khảo mô tả segment/địa chỉ như thuộc tính customer, nhưng schema customer không có hai thông tin đó. Segment nằm trên ecom_sales; địa lý nằm ở region và region_code của giao dịch. Không tự tạo hoặc gán ngược thuộc tính customer.
+2. Dataset live có 28.356 product_code duy nhất và các category thuộc nhóm chăm sóc cá nhân/mỹ phẩm; mô tả khoảng 1.900 SKU và Office/Furniture/Technology không khớp. Với pipeline này, dùng schema và giá trị quan sát từ nguồn đang kết nối làm căn cứ; ghi phần context web là chưa đồng bộ cho tới khi xác minh được snapshot/phiên bản.
+3. Segment live có Consumer, Corporate, Self-Employed; context ghi Home Office. Giữ đúng giá trị nguồn, không đổi Self-Employed thành Home Office nếu chưa có mapping chính thức.
+4. Sales/profit cộng theo segment là 6.517.674 và 1.065.413,58, khớp tổng trong README tham khảo. Dữ liệu bao phủ bốn năm; không diễn giải tổng này thành doanh thu một năm.
+5. Discount live nằm trong 0–0,85 và có trung bình 0,142883; 11.041 dòng và 5.496 đơn có profit âm. Đây là baseline mô tả, chưa chứng minh discount gây ra lỗ.
+6. Join coverage vẫn chưa biết do query 9 lỗi. Không chốt test relationship hoặc mức độ đầy đủ dimension cho tới khi chạy lại query đã sửa.
 
 ## 4. Sơ đồ quan hệ tạm thời
 
@@ -63,10 +85,10 @@ Với từng quan hệ, cần ghi lại: (a) số dòng fact có khóa null, (b)
 | Profit | SUM(profit) ở grain dòng hàng | Giữ giá trị âm, không lọc bỏ dòng lỗ. |
 | Profit margin | SUM(profit) / NULLIF(SUM(sales), 0) | Không lấy trung bình margin từng dòng; luôn ghi rõ mẫu số và kỳ phân tích. |
 | Units | SUM(quantity) | Kiểm tra null, 0 và quantity âm trước. |
-| Discount trung bình | AVG(discount) trên các dòng hợp lệ, nhóm theo category | Xác minh discount là tỷ lệ 0–1 hay điểm phần trăm 0–100 trước khi gắn nhãn %. |
+| Discount trung bình | AVG(discount) trên các dòng hợp lệ, nhóm theo category | Lần profile thấy range 0–0,85 và avg 0,142883; diễn giải theo tỷ lệ 0–1, tức khoảng 0–85% và trung bình 14,29%. |
 | Dòng hàng lỗ | Dòng có profit < 0 | Tách riêng với đơn hàng lỗ. |
-| Đơn hàng lỗ | Tổng profit các dòng cùng order_id < 0 | Gom theo order trước, sau đó mới đếm đơn theo segment ở cấp giao dịch. |
-| Segment | ecom_sales.segment tại từng dòng giao dịch | Không coi đây là thuộc tính cố định của customer theo schema đã công bố. |
+| Đơn hàng lỗ | Tổng profit các dòng cùng order_id < 0 | Lần profile thấy 5.496 đơn lỗ; gom theo order trước, sau đó mới đếm theo segment. |
+| Segment | ecom_sales.segment tại từng dòng giao dịch | Không coi đây là thuộc tính cố định của customer; lần profile không thấy order nào có nhiều segment. |
 | Giá trị tiền tệ trong RFM | Tạm đề xuất tổng sales theo customer; cần cân nhắc sales hay profit | Frequency đếm order_id khác null, không đếm số dòng. Mốc snapshot tái lập được là MAX(order_date) + 1 ngày, trừ khi chọn ngày báo cáo khác. |
 | VIP/churn risk | Heuristic được mô tả rõ, kết hợp giá trị khách hàng và thời gian không hoạt động | Dataset không có nhãn churn quan sát được; chỉ gọi là cờ rủi ro, không tuyên bố là dự đoán churn đã được kiểm chứng. |
 | Tác động discount | So sánh mô tả giữa các nhóm discount, số đơn và margin | Dữ liệu quan sát không chứng minh discount gây ra thay đổi lợi nhuận nếu không có counterfactual/thử nghiệm phù hợp. |
@@ -99,7 +121,7 @@ Các câu hỏi này là scope nghiệp vụ cho Gold marts và Text-to-SQL eval
 
 1. Mở SSMS, DBeaver hoặc DataGrip và tự kết nối SQL Server Xóm bằng credentials của bạn.
 2. Chọn database chứa schema e_commerce.
-3. Mở file ../sql/phase_01_profile.sql và chạy nguyên trạng trước. File chỉ có SELECT, không tạo hoặc sửa object ở nguồn.
+3. Mở file ../sql/phase_01_profile.sql và chạy nguyên trạng trước. File chỉ đọc dữ liệu (SELECT, cùng SET NOCOUNT ON), không tạo hoặc sửa object ở nguồn.
 4. Ghi lại số dòng chính xác, số khóa trùng, null, khoảng ngày, khoảng discount, tỷ lệ join và phân bố các giá trị.
 5. Không đưa credentials, tên/email khách hàng hoặc trích xuất dòng dữ liệu thô vào Git. Chỉ ghi kết quả tổng hợp cần thiết.
 6. Đối chiếu checklist bên dưới, cập nhật quyết định và bằng chứng. Chỉ đánh dấu hoàn tất sau khi có kết quả thật.
@@ -112,23 +134,23 @@ Chỉ điền cột Quan sát sau khi chạy SQL profile. “Đang chờ” khô
 
 | Kiểm tra | Tiêu chí / quyết định | Quan sát |
 |---|---|---|
-| Schema thực tế | Tên cột và kiểu dữ liệu khớp; giải thích cột thêm, mất hoặc đổi kiểu | Đang chờ |
-| Số dòng | Ghi số chính xác của cả 4 bảng và thời điểm profile | Đang chờ |
-| Khóa ứng viên | Khóa đề xuất không null và không có giá trị trùng | Đang chờ |
-| Grain ecom_sales | row_id nhận diện một dòng; order_id lặp khi đơn có nhiều dòng hàng | Đang chờ |
-| Referential integrity | Biết số dòng có khóa null và orphan cho cả 3 quan hệ | Đang chờ |
-| Cột đo lường | Biết null, âm, 0 và range của quantity, sales, discount, profit | Đang chờ |
-| Đơn vị discount | Xác minh tỷ lệ và range qua min/max cùng giá trị quan sát | Đang chờ |
-| Độ phủ ngày | Biết ngày đầu/cuối, tháng thiếu và dữ liệu có đủ lịch sử để tính YoY | Đang chờ |
-| Miền category/segment/market | Kiểm tra giá trị khác nhau, null, lỗi chính tả và khác biệt viết hoa | Đang chờ |
-| Metric contract | Chốt revenue, profit, margin, đơn lỗ, RFM snapshot và churn heuristic | Đang chờ |
-| Lệch so với reference | Đối soát thuộc tính customer, số dòng sản phẩm/SKU và log cũ; hoặc ghi rõ chưa giải quyết | Đang chờ |
+| Schema thực tế | Tên cột/nullability khớp; decimal(10,2), tọa độ decimal(10,6) | Đạt; cần bổ sung ngày profile |
+| Số dòng | customer 17.415; sales 51.290; product 28.356; region 3.828; tổng 100.889 | Đạt; ngày profile chưa ghi |
+| Khóa ứng viên | 4 khóa có non-null = distinct = row count; duplicate queries rỗng | Đạt theo output đã gửi |
+| Grain ecom_sales | 51.290 dòng, 25.728 đơn, 12.793 đơn nhiều dòng, tối đa 14 dòng/đơn | Đạt cho grain; row_id được xác nhận duy nhất |
+| Referential integrity | Biết null/orphan cho 3 quan hệ | Chưa đạt; query 9 lỗi, cần chạy lại |
+| Cột đo lường | Các cột fact profile không null; quantity/sales không âm hoặc bằng 0; profit âm có tồn tại | Đạt theo output đã gửi |
+| Đơn vị discount | Range 0–0,85, avg 0,142883; 29.470/51.290 dòng có discount = 0 | Đạt; báo cáo theo phần trăm cần nhân 100 |
+| Độ phủ ngày | 2020-01-01 đến 2023-12-31, có đủ 48 tháng | Đạt cho độ phủ tháng; đủ dữ liệu YoY |
+| Miền category/segment/market | Đã thấy category mỹ phẩm/chăm sóc cá nhân và segment Self-Employed; market chưa được gửi | Một phần; cần đối chiếu market và context |
+| Metric contract | Đã đo doanh thu/lợi nhuận và đơn lỗ; RFM/churn heuristic còn cần chốt ngưỡng | Một phần |
+| Lệch so với reference | Customer attributes, categories/SKU, segment khác context; tổng theo segment khớp README | Đã ghi lệch; cần xác nhận tài liệu mô tả cũ hay khác phiên bản |
 
 ### Decision log
 
 | Ngày | Câu hỏi / phát hiện | Bằng chứng | Quyết định / tác động |
 |---|---|---|---|
-| Chưa chạy | Chưa có profile từ SQL Server thật | Workspace hiện chưa có credentials nguồn | Giữ mọi số đo và kết luận chất lượng ở trạng thái chờ; cần chạy script trước khi chốt thiết kế ingestion ở giai đoạn 2. |
+| Chưa ghi ngày | Profile lần đầu đã chạy; join coverage lỗi | Kết quả aggregate người dùng gửi trong chat; row count cộng thành 100.889 | Ghi nhận baseline ở trên; dùng đúng category/segment live; sửa và chạy lại query 9, rồi bổ sung ngày profile và market domains trước khi đóng M1. |
 
 ## 8. Điều kiện hoàn thành giai đoạn 1
 

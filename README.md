@@ -11,7 +11,7 @@ A learning project to rebuild an end-to-end analytics pipeline from the Xóm E-C
 
 ## Current status
 
-**Phase 1 — source understanding and data contract:** profiling SQL and the validation checklist are prepared. Live source profiling is pending a run from SSMS/DBeaver using your Xóm credentials.
+**Phase 1 — source understanding and data contract:** first source profile is recorded in the docs. Join coverage still needs to be rerun after fixing a SQL Server compatibility issue; add the profile date and remaining market-domain results before closing this phase.
 
 Start here: [Phase 1: Data understanding](docs/phase-01-data-understanding.md) and [read-only SQL profile](sql/phase_01_profile.sql).
 
