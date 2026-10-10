@@ -240,6 +240,69 @@ FROM join_checks
 GROUP BY relationship
 ORDER BY relationship;
 
+-- 9a. Diagnose unmatched product/region keys using aggregate business impact.
+-- These are dimension codes only; no customer identifiers or PII are returned.
+;WITH orphan_keys AS (
+    SELECT
+        'product' AS dimension_name,
+        s.product_code AS unmatched_code,
+        COUNT_BIG(*) AS affected_sales_rows,
+        MIN(s.order_date) AS first_order_date,
+        MAX(s.order_date) AS last_order_date,
+        SUM(s.sales) AS affected_sales,
+        SUM(s.profit) AS affected_profit
+    FROM e_commerce.ecom_sales AS s
+    LEFT JOIN (SELECT DISTINCT product_code FROM e_commerce.product) AS p
+        ON p.product_code = s.product_code
+    WHERE s.product_code IS NOT NULL
+      AND p.product_code IS NULL
+    GROUP BY s.product_code
+
+    UNION ALL
+
+    SELECT
+        'region',
+        s.region_code,
+        COUNT_BIG(*),
+        MIN(s.order_date),
+        MAX(s.order_date),
+        SUM(s.sales),
+        SUM(s.profit)
+    FROM e_commerce.ecom_sales AS s
+    LEFT JOIN (SELECT DISTINCT region_code FROM e_commerce.region) AS r
+        ON r.region_code = s.region_code
+    WHERE s.region_code IS NOT NULL
+      AND r.region_code IS NULL
+    GROUP BY s.region_code
+)
+SELECT *
+FROM orphan_keys
+ORDER BY dimension_name, unmatched_code;
+
+-- Check whether the unmatched product/region records overlap, without returning row IDs.
+;WITH product_keys AS (
+    SELECT DISTINCT product_code FROM e_commerce.product
+), region_keys AS (
+    SELECT DISTINCT region_code FROM e_commerce.region
+), orphan_flags AS (
+    SELECT
+        CASE WHEN s.product_code IS NOT NULL AND p.product_code IS NULL THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END AS product_orphan,
+        CASE WHEN s.region_code IS NOT NULL AND r.region_code IS NULL THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END AS region_orphan,
+        s.sales,
+        s.profit
+    FROM e_commerce.ecom_sales AS s
+    LEFT JOIN product_keys AS p ON p.product_code = s.product_code
+    LEFT JOIN region_keys AS r ON r.region_code = s.region_code
+)
+SELECT
+    SUM(product_orphan) AS product_orphan_rows,
+    SUM(region_orphan) AS region_orphan_rows,
+    SUM(CASE WHEN product_orphan = 1 AND region_orphan = 1 THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END) AS rows_orphan_in_both,
+    SUM(CASE WHEN product_orphan = 1 OR region_orphan = 1 THEN CONVERT(bigint, 1) ELSE CONVERT(bigint, 0) END) AS rows_affected_any_join,
+    SUM(CASE WHEN product_orphan = 1 OR region_orphan = 1 THEN sales ELSE CONVERT(decimal(18, 2), 0) END) AS sales_on_affected_rows,
+    SUM(CASE WHEN product_orphan = 1 OR region_orphan = 1 THEN profit ELSE CONVERT(decimal(18, 2), 0) END) AS profit_on_affected_rows
+FROM orphan_flags;
+
 -- 10. Order grain and line-loss vs order-loss distinction.
 ;WITH order_summary AS (
     SELECT
