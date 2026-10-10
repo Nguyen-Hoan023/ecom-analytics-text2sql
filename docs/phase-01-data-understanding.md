@@ -1,6 +1,6 @@
 # Giai đoạn 1 — Hiểu nguồn dữ liệu và chốt data contract
 
-**Trạng thái:** đã đo profile nguồn, join exceptions và các domain category/segment/market. Mốc profile được ghi nhận là `2026-10-10 14:25:29.4548071 UTC`; metric contract và một số giả định nghiệp vụ vẫn cần chốt trước khi đóng M1.
+**Trạng thái:** source profile và metric contract v1 đã được ghi nhận. Mốc profile là `2026-10-10 14:25:29.4548071 UTC`. Các giả định về ý nghĩa `sales`, ngưỡng VIP/churn và một số câu hỏi phân tích đã được chốt làm mặc định v1, đồng thời được đánh dấu để kiểm chứng khi phân tích.
 
 ## 1. Mục tiêu và phạm vi
 
@@ -83,47 +83,52 @@ ecom_sales.region_code  → region.region_code
 
 Với từng quan hệ, cần ghi lại: (a) số dòng fact có khóa null, (b) số khóa khác null nhưng không tìm thấy dimension tương ứng, (c) số khóa dimension bị trùng và (d) số dòng sau join có giữ nguyên so với fact hay không. Không xây join cuối cùng nếu khóa dimension chưa duy nhất, trừ khi đã xác định quy tắc xử lý trùng.
 
-## 5. Định nghĩa nghiệp vụ tạm thời
+## 5. Metric contract v1 và giả định nghiệp vụ
 
-Đây là hợp đồng ban đầu. Cần đối chiếu ý nghĩa dữ liệu sau khi profile và ghi lại mọi thay đổi trước khi triển khai trong Gold.
+Contract này là bộ quy tắc chung cho SQL phân tích, dbt Gold, dashboard và Text-to-SQL. “Grain” là đơn vị mà mỗi dòng dữ liệu đại diện. Quy tắc đã chốt cho v1 được áp dụng nhất quán; những điều chưa được tài liệu nguồn xác nhận được ghi là giả định và cần kiểm tra lại bằng phân tích độ nhạy.
 
-| Chỉ số | Định nghĩa đề xuất | Lưu ý |
-|---|---|---|
-| Revenue | SUM(sales) ở grain dòng hàng | Xác minh sales đã là doanh thu dòng hàng hay còn cần nhân quantity. |
-| Profit | SUM(profit) ở grain dòng hàng | Giữ giá trị âm, không lọc bỏ dòng lỗ. |
-| Profit margin | SUM(profit) / NULLIF(SUM(sales), 0) | Không lấy trung bình margin từng dòng; luôn ghi rõ mẫu số và kỳ phân tích. |
-| Units | SUM(quantity) | Kiểm tra null, 0 và quantity âm trước. |
-| Discount trung bình | AVG(discount) trên các dòng hợp lệ, nhóm theo category | Lần profile thấy range 0–0,85 và avg 0,142883; diễn giải theo tỷ lệ 0–1, tức khoảng 0–85% và trung bình 14,29%. |
-| Dòng hàng lỗ | Dòng có profit < 0 | Tách riêng với đơn hàng lỗ. |
-| Đơn hàng lỗ | Tổng profit các dòng cùng order_id < 0 | Lần profile thấy 5.496 đơn lỗ; gom theo order trước, sau đó mới đếm theo segment. |
-| Segment | ecom_sales.segment tại từng dòng giao dịch | Không coi đây là thuộc tính cố định của customer; lần profile không thấy order nào có nhiều segment. |
-| Giá trị tiền tệ trong RFM | Tạm đề xuất tổng sales theo customer; cần cân nhắc sales hay profit | Frequency đếm order_id khác null, không đếm số dòng. Mốc snapshot tái lập được là MAX(order_date) + 1 ngày, trừ khi chọn ngày báo cáo khác. |
-| VIP/churn risk | Heuristic được mô tả rõ, kết hợp giá trị khách hàng và thời gian không hoạt động | Dataset không có nhãn churn quan sát được; chỉ gọi là cờ rủi ro, không tuyên bố là dự đoán churn đã được kiểm chứng. |
-| Tác động discount | So sánh mô tả giữa các nhóm discount, số đơn và margin | Dữ liệu quan sát không chứng minh discount gây ra thay đổi lợi nhuận nếu không có counterfactual/thử nghiệm phù hợp. |
+| Metric / chủ đề | Grain | Quy tắc v1 | Trạng thái / giả định |
+|---|---|---|---|
+| Sales / Revenue | Dòng hàng (`row_id`) | `SUM(sales)`; không nhân thêm `quantity`; luôn ghi kỳ phân tích. | Quy ước v1. Coi `sales` là số tiền ở dòng hàng theo nguồn. Nguồn hiện chưa xác nhận đó là gross hay net; không gắn nhãn net revenue. |
+| Profit | Dòng hàng (`row_id`) | `SUM(profit)`; giữ cả giá trị âm. | Đã chốt v1; không lọc bỏ dòng/đơn lỗ. |
+| Profit margin | Nhóm báo cáo, ví dụ market-tháng | `SUM(profit) / NULLIF(SUM(sales), 0)`; định dạng phần trăm khi trình bày. | Đã chốt v1; đây là margin gia quyền theo sales, không phải trung bình margin từng dòng. |
+| Units sold | Sản phẩm/kỳ | `SUM(quantity)`. | Đã chốt v1; dùng làm nghĩa “bán chạy” chính. Revenue có thể là chỉ số phụ với nhãn riêng. |
+| Average discount | Category hoặc nhóm khác, trọng số dòng hàng | `AVG(discount)`; giữ discount bằng 0; nhân 100 khi trình bày %. | Giả định v1: mỗi dòng hàng có trọng số ngang nhau, không phải mỗi đơn. Nguồn lưu tỷ lệ 0–1; profile thấy avg 0,142883 và max 0,85. |
+| Loss-making line | Dòng hàng | Dòng có `profit < 0`. | Đã chốt v1; tách biệt với đơn hàng lỗ. |
+| Loss-making order | Đơn (`order_id`) | Cộng `profit` các dòng trong đơn; đơn lỗ khi tổng `< 0`; đếm mỗi đơn một lần. | Đã chốt v1; profile quan sát 5.496/25.728 đơn lỗ. |
+| Order count | Nhóm báo cáo | `COUNT(DISTINCT order_id)`. | Đã chốt v1; không dùng số dòng hàng thay cho số đơn. |
+| Segment attribution | Dòng giao dịch/đơn | Dùng `ecom_sales.segment` từ dòng giao dịch. | Đã chốt v1; không xem segment là thuộc tính cố định của customer. Profile không thấy đơn có nhiều segment. |
+| Dimension join | Dòng fact | Dùng `LEFT JOIN`; giữ giao dịch không khớp và gắn `Unknown/Unmatched`. | Đã chốt v1; không tự ánh xạ product/region orphan và không làm mất doanh thu khi enrich. |
+| RFM | Customer có giao dịch | Recency = số ngày từ lần mua gần nhất đến snapshot; Frequency = số `order_id` khác nhau; Monetary = `SUM(sales)`. | Đã chốt v1. Snapshot = `MAX(order_date) + 1 ngày` để tái lập; với dữ liệu hiện tại là 2024-01-01. Customer không có đơn được giữ trong population nhưng không chấm RFM. |
+| RFM score / VIP | Customer có giao dịch | Chia Recency, Frequency, Monetary thành 5 nhóm (`NTILE(5)`); Recency thấp ngày được điểm cao, Frequency/Monetary lớn được điểm cao. VIP v1 = nhóm Monetary cao nhất (M=5). | Giả định v1; dùng `customer_id` làm tie-breaker ổn định. Các nhóm xấp xỉ quintile, không phải ngưỡng chi tiêu cố định. |
+| Churn risk | Customer có giao dịch | Cờ rủi ro khi không có đơn trong ít nhất 90 ngày tính đến snapshot. VIP có rủi ro khi vừa là VIP vừa có cờ này. | Giả định v1, chỉ là heuristic vì dataset không có churn label. So sánh 60/90/180 ngày trước khi diễn giải. Snapshot 2024-01-01 nghĩa là đánh giá lịch sử, không phải churn hiện tại. |
+| Discount impact | Dòng hàng / nhóm discount | So sánh sales, profit, margin và số đơn giữa các dải: 0%, (0–20%], (20–40%], (40–60%], >60%. | Phân tích mô tả. Không kết luận discount gây lỗ nếu không có thiết kế nhân quả/counterfactual. |
+| Category mix theo segment | Category trong segment | `category_sales / segment_sales` để so sánh tỷ trọng sales category giữa Consumer và Corporate. | Giả định v1 cho câu hỏi cross-sell; đây là category mix, không chứng minh tác động cross-sell. |
+| Market basket | Cặp sản phẩm trong đơn | Khử trùng về một cặp `(order_id, product_code)`; support = đơn chứa cả cặp / tổng đơn hợp lệ; confidence(A→B) = đơn chứa A và B / đơn chứa A; lift = confidence(A→B) / support(B). | Ngưỡng khám phá ban đầu: support ≥0,5% (khoảng 129/25.728 đơn theo baseline); tham số này cần sensitivity check. Giữ product_code nguồn nếu product orphan và gắn nhãn unmatched. |
 
-Khi phân tích market basket, trước self-join cần đưa dữ liệu về duy nhất một cặp (order_id, product_code) để số dòng lặp không làm tăng giả tạo số cặp sản phẩm. Nên báo cáo support, confidence, lift và ngưỡng minimum support đã chọn.
+Các giả định chính của v1 là: ý nghĩa gross/net của `sales` chưa được nguồn xác nhận; “bán chạy” được hiểu là units; average discount tính theo dòng; VIP là nhóm Monetary cao nhất; churn risk dùng inactivity 90 ngày; cross-sell được đại diện bằng category revenue mix; minimum support bắt đầu ở 0,5%. Mọi đầu ra phải ghi tên metric và kỳ phân tích để người đọc hiểu đúng phạm vi.
 
-### Bản đồ 15 câu hỏi → dữ liệu và điểm cần chốt
+### Bản đồ 15 câu hỏi → quy ước v1
 
-| Q | Câu hỏi | Bảng / grain chính | Điều cần quyết định hoặc kiểm chứng |
+| Q | Câu hỏi | Bảng / grain chính | Quy ước v1 / cách xử lý |
 |---:|---|---|---|
-| 1 | Tổng revenue và profit | ecom_sales, dòng hàng | Đối soát null, grain và cách cộng sales/profit. |
-| 2 | Revenue theo segment | ecom_sales, dòng hàng | Xác nhận domain segment và segment có nhất quán trong cùng order hay không. |
-| 3 | Top 10 sản phẩm bán chạy | ecom_sales + product | “Bán chạy” là theo units, số order hay revenue? Chọn và đặt tên chỉ số. |
-| 4 | Số customer theo gender × occupation | customer, customer_id | Xác nhận customer_id duy nhất; xử lý unknown/null riêng. |
-| 5 | Discount trung bình theo category | ecom_sales + product | Xác nhận scale discount và trung bình theo dòng hay theo order. |
-| 6 | Profit margin theo market | ecom_sales + region | Dùng tổng profit chia tổng sales, không lấy trung bình margin từng dòng. |
-| 7 | Số đơn lỗ theo segment | ecom_sales, gom theo order_id | Đơn lỗ khác dòng lỗ; kiểm tra order có nhiều segment không. |
-| 8 | VIP có rủi ro churn | customer + ecom_sales | Chốt VIP, cửa sổ inactivity, snapshot date; đây là heuristic vì không có churn label. |
-| 9 | Cross-sell Consumer vs Corporate | ecom_sales + product | Làm rõ so sánh danh mục/sản phẩm, mẫu số và cách tính share. |
-| 10 | Top 15 quốc gia theo revenue | ecom_sales + region | Xử lý orphan region_code và cách chuẩn hóa tên country. |
-| 11 | YoY revenue theo tháng | ecom_sales, order_date | Kiểm tra độ dài lịch sử, tháng thiếu và tháng có mẫu số năm trước bằng 0. |
-| 12 | Top 3 sản phẩm profit cao nhất mỗi category | ecom_sales + product | Chốt tổng profit, cách xử lý tie và yêu cầu đủ 3 sản phẩm/category. |
-| 13 | Customer mua tại nhiều region | ecom_sales, customer_id + region_code | Xác định region hay market là mức địa lý cần so sánh; mỗi key phải có ý nghĩa ổn định. |
-| 14 | RFM segmentation | ecom_sales, customer/order | Chốt recency reference date, frequency theo order, monetary theo sales hay profit, và cách chấm điểm. |
-| 15 | Sản phẩm thường được mua cùng nhau | ecom_sales, order_id + product_code | Khử trùng cặp trong order; báo support/confidence/lift và ngưỡng minimum support. |
+| 1 | Tổng revenue và profit | ecom_sales, dòng hàng | `SUM(sales)`, `SUM(profit)`; ghi rõ kỳ; không diễn giải tổng 4 năm thành doanh thu năm. |
+| 2 | Revenue theo segment | ecom_sales, dòng hàng | `SUM(sales)` theo `ecom_sales.segment`; giữ giá trị segment nguồn. |
+| 3 | Top 10 sản phẩm bán chạy | ecom_sales + product | Xếp theo `SUM(quantity)` giảm dần; revenue là metric phụ; tie-break bằng product_code. |
+| 4 | Số customer theo gender × occupation | customer, customer_id | `COUNT(DISTINCT customer_id)`; giữ nhóm NULL/Unknown thay vì loại. |
+| 5 | Discount trung bình theo category | ecom_sales + product | `AVG(discount)` theo dòng hàng; giữ zero; hiển thị phần trăm; product orphan vào Unknown. |
+| 6 | Profit margin theo market | ecom_sales + region | `SUM(profit)/SUM(sales)`; left join và giữ nhóm market Unknown cho orphan region. |
+| 7 | Số đơn lỗ theo segment | ecom_sales, gom theo order_id | Gom profit theo đơn, tổng `<0` là lỗ; segment được lấy từ fact. |
+| 8 | VIP có rủi ro churn | customer + ecom_sales | VIP = M score 5; risk = không mua ≥90 ngày; snapshot `MAX(order_date)+1`; báo là heuristic và so sánh 60/180 ngày. |
+| 9 | Cross-sell Consumer vs Corporate | ecom_sales + product | V1 so sánh category revenue share trong tổng sales của từng segment; gọi rõ là category mix. |
+| 10 | Top 15 quốc gia theo revenue | ecom_sales + region | `SUM(sales)` theo country nguồn; giữ Unknown/unmatched riêng; không tự chuẩn hóa tên. |
+| 11 | YoY revenue theo tháng | ecom_sales, order_date | Tổng sales theo tháng lịch; growth = `(sales_tháng_này / sales_cùng_tháng_năm_trước) - 1`; growth null nếu năm trước bằng 0. |
+| 12 | Top 3 sản phẩm profit cao nhất mỗi category | ecom_sales + product | `SUM(profit)` theo product/category; xếp giảm dần, tie-break product_code để trả đúng 3 sản phẩm; product orphan vào category Unknown. |
+| 13 | Customer mua tại nhiều region | ecom_sales, customer_id + region_code | Đếm `COUNT(DISTINCT region_code)` khớp dimension theo customer; đánh dấu riêng giao dịch orphan region. |
+| 14 | RFM segmentation | ecom_sales, customer/order | Dùng công thức, snapshot và quintile scoring nêu trong contract v1. |
+| 15 | Sản phẩm thường được mua cùng nhau | ecom_sales, order_id + product_code | Dedupe order-product; tính support/confidence/lift; bắt đầu support 0,5% và kiểm tra độ nhạy. |
 
-Các câu hỏi này là scope nghiệp vụ cho Gold marts và Text-to-SQL evaluation sau này. Chưa nên viết SQL trả lời từng câu trước khi các điểm về grain, metric, join và mẫu số được chốt.
+Các câu hỏi này là scope nghiệp vụ cho Gold marts và Text-to-SQL evaluation sau này. Quy ước v1 ở trên là hợp đồng để bắt đầu modeling; khi phát hiện kết quả bất thường, cập nhật decision log và phiên bản contract trước khi đổi logic.
 
 ## 6. Cách chạy profile nguồn
 
@@ -151,7 +156,7 @@ Chỉ điền cột Quan sát sau khi chạy SQL profile. “Đang chờ” khô
 | Đơn vị discount | Range 0–0,85, avg 0,142883; 29.470/51.290 dòng có discount = 0 | Đạt; báo cáo theo phần trăm cần nhân 100 |
 | Độ phủ ngày | 2020-01-01 đến 2023-12-31, có đủ 48 tháng | Đạt cho độ phủ tháng; đủ dữ liệu YoY |
 | Miền category/segment/market | Category mỹ phẩm/chăm sóc cá nhân; segment Consumer/Corporate/Self-Employed; 5 market, 23 region, tổng 3.828 region_code | Đã đo; taxonomy market live khác các nhãn trong context tham khảo, không tự chuẩn hóa |
-| Metric contract | Đã đo doanh thu/lợi nhuận và đơn lỗ; RFM/churn heuristic còn cần chốt ngưỡng | Một phần |
+| Metric contract | Công thức, grain, join, ngưỡng VIP/churn, RFM, cross-sell và basket được ghi thành quy ước v1 | Đã chốt v1; ý nghĩa gross/net của sales và các ngưỡng heuristic cần kiểm chứng/sensitivity check |
 | Lệch so với reference | Customer attributes, categories/SKU, segment khác context; tổng theo segment khớp README | Đã ghi lệch; cần xác nhận tài liệu mô tả cũ hay khác phiên bản |
 
 ### Decision log
@@ -160,6 +165,7 @@ Chỉ điền cột Quan sát sau khi chạy SQL profile. “Đang chờ” khô
 |---|---|---|---|
 | 2026-10-10 | Profile ghi nhận 3 dòng fact duy nhất thiếu dimension match | Query 9a: product PPR000002/PPR000010; region RRR0001; 1 dòng trùng ở cả hai nhóm; sales ảnh hưởng 506, profit 253 | Không tự map mã; giữ fact và khóa nguồn, dùng left join/nhãn unmatched ở Silver/Gold để tránh mất số liệu. |
 | 2026-10-10 | Domain market/region của nguồn live đã được gửi | 23 cặp market-region; Africa 321, Asia Pacific 931, Europe 1.281, LATAM 645, USCA 650; tổng 3.828; mỗi cặp không có trùng region_code | Giữ nhãn và cấp địa lý đúng như nguồn; chỉ tạo mapping sang context/reference nếu xác minh được quy tắc nghiệp vụ. |
+| 2026-10-10 | Chốt metric contract v1 theo bộ quy ước đề xuất | Quy ước grain/công thức, left join, RFM, VIP M=5, inactivity 90 ngày, category revenue mix và market basket support 0,5% | Áp dụng thống nhất trong dbt Gold và Text-to-SQL; công khai giả định sales gross/net chưa rõ và kiểm tra sensitivity cho các ngưỡng. |
 
 ## 8. Điều kiện hoàn thành giai đoạn 1
 
