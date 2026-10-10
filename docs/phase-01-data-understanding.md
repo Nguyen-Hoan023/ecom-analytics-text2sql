@@ -41,13 +41,15 @@ Ngày chạy chưa được ghi lại trong kết quả gửi qua chat; cần b�
 | ecom_sales grain | 51.290 dòng; 25.728 order_id khác null; không null order_id/order_date. Có 12.935 đơn một dòng, 12.793 đơn nhiều dòng; tối đa 14 dòng/đơn. |
 | Số đo giao dịch | quantity: 1–20; sales: 2–3.940; profit: -1.746 đến 1.820. Các cột quantity/sales/profit không có null; không có quantity hoặc sales bằng 0/âm. Có 11.041 dòng profit âm. |
 | Discount | Không có null; min 0, max 0,85, avg 0,142883. Kết quả phù hợp với cách lưu theo tỷ lệ 0–1; trung bình tương đương khoảng 14,29%, tối đa 85%. Có 29.470 dòng discount bằng 0. |
-| Segment | Consumer: 26.518 dòng, sales 2.146.780, profit 365.377,50; Corporate: 15.429, sales 3.840.707, profit 608.523,36; Self-Employed: 9.343, sales 530.187, profit 91.512,72. Cộng theo segment: sales 6.517.674, profit 1.065.413,58. |
+| Segment | Consumer: 26.518 dòng, sales 2.146.780, profit 365.377,50; Corporate: 15.429, sales 3.840.707, profit 608.523,36; Self-Employed: 9.343, sales 530.187, profit 91.512,72. Số dòng cộng đúng 51.290; sales 6.517.674, profit 1.065.413,58. |
 | Lỗ theo đơn | 5.496/25.728 đơn có tổng profit âm. Không có đơn thiếu profit hoặc thiếu segment; không có order chứa nhiều segment. |
 | Thời gian | Từ 2020-01-01 đến 2023-12-31; kết quả có đủ 48 tháng liên tục. |
 | customer.gender | Kết quả được gửi cho thấy 124/17.415 giá trị null (khoảng 0,71%). Cần xác nhận đây là cột duy nhất có null trong output đầy đủ. |
 | Join coverage | Không có fact key null. Customer orphan 0; product orphan 2; region orphan 2. Hai tập trùng 1 dòng, tổng cộng 3 dòng fact duy nhất ảnh hưởng, sales 506 và profit 253. |
 
 Product có 28.356 product_code duy nhất. Các danh mục quan sát là Body care, Face care, Hair care, Home and Accessories, Make up; đây không phải Office Supplies/Furniture/Technology như mô tả context.
+
+Tổng product theo category từ kết quả 17 nhóm category/subcategory: Body care 11.548; Face care 1.885; Hair care 4.070; Home and Accessories 5.912; Make up 4.941. Tổng 28.356. Trong từng nhóm category/subcategory, product_rows bằng distinct_product_codes.
 
 Chi tiết orphan từ query 9a: product_code PPR000002 có 1 dòng (2021-09-01, sales 20, profit 10); product_code PPR000010 có 1 dòng (2020-04-04, sales 70, profit 35); region_code RRR0001 có 2 dòng (2020-04-04, sales 486, profit 243). Có 1 dòng vừa thiếu product vừa thiếu region, nên tổng ảnh hưởng duy nhất là 3 dòng, sales 506, profit 253. Không có cơ sở để suy đoán mã dimension thay thế.
 
