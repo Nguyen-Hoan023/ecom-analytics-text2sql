@@ -1,6 +1,6 @@
 # Giai đoạn 1 — Hiểu nguồn dữ liệu và chốt data contract
 
-**Trạng thái:** đã chạy profile nguồn lần đầu; còn thiếu ngày chạy, market-domain output và join coverage để đóng M1.
+**Trạng thái:** profile nguồn đã đo; join exceptions đã định lượng. Còn thiếu ngày chạy và market-domain output để hoàn tất baseline M1.
 
 ## 1. Mục tiêu và phạm vi
 
@@ -45,9 +45,11 @@ Ngày chạy chưa được ghi lại trong kết quả gửi qua chat; cần b�
 | Lỗ theo đơn | 5.496/25.728 đơn có tổng profit âm. Không có đơn thiếu profit hoặc thiếu segment; không có order chứa nhiều segment. |
 | Thời gian | Từ 2020-01-01 đến 2023-12-31; kết quả có đủ 48 tháng liên tục. |
 | customer.gender | Kết quả được gửi cho thấy 124/17.415 giá trị null (khoảng 0,71%). Cần xác nhận đây là cột duy nhất có null trong output đầy đủ. |
-| Join coverage | Không có fact key null. Customer orphan 0; product orphan 2 dòng; region orphan 2 dòng. Cần xác định hai tập orphan có trùng dòng và ảnh hưởng sales/profit thế nào. |
+| Join coverage | Không có fact key null. Customer orphan 0; product orphan 2; region orphan 2. Hai tập trùng 1 dòng, tổng cộng 3 dòng fact duy nhất ảnh hưởng, sales 506 và profit 253. |
 
 Product có 28.356 product_code duy nhất. Các danh mục quan sát là Body care, Face care, Hair care, Home and Accessories, Make up; đây không phải Office Supplies/Furniture/Technology như mô tả context.
+
+Chi tiết orphan từ query 9a: product_code PPR000002 có 1 dòng (2021-09-01, sales 20, profit 10); product_code PPR000010 có 1 dòng (2020-04-04, sales 70, profit 35); region_code RRR0001 có 2 dòng (2020-04-04, sales 486, profit 243). Có 1 dòng vừa thiếu product vừa thiếu region, nên tổng ảnh hưởng duy nhất là 3 dòng, sales 506, profit 253. Không có cơ sở để suy đoán mã dimension thay thế.
 
 ### Danh mục cột
 
@@ -63,7 +65,7 @@ Product có 28.356 product_code duy nhất. Các danh mục quan sát là Body c
 3. Segment live có Consumer, Corporate, Self-Employed; context ghi Home Office. Giữ đúng giá trị nguồn, không đổi Self-Employed thành Home Office nếu chưa có mapping chính thức.
 4. Sales/profit cộng theo segment là 6.517.674 và 1.065.413,58, khớp tổng trong README tham khảo. Dữ liệu bao phủ bốn năm; không diễn giải tổng này thành doanh thu một năm.
 5. Discount live nằm trong 0–0,85 và có trung bình 0,142883; 11.041 dòng và 5.496 đơn có profit âm. Đây là baseline mô tả, chưa chứng minh discount gây ra lỗ.
-6. Join coverage: customer khớp đủ; product và region mỗi quan hệ thiếu match cho 2 dòng fact. Cần chạy query 9a để xác định mã dimension không khớp, chồng lấp giữa hai tập và doanh thu/lợi nhuận liên quan. Cho tới lúc đó, không dùng inner join nếu muốn giữ đủ số đo giao dịch.
+6. Join coverage: customer khớp đủ; product và region mỗi quan hệ thiếu match cho 2 dòng fact, trong đó 1 dòng trùng ở cả hai nhóm. Nếu inner join cả hai dimension thì mất 3 dòng, sales 506 và profit 253. Giữ nguyên fact và mã nguồn; khi cần enrich hãy dùng left join, đánh dấu unmatched, và không tự suy đoán dimension.
 
 ## 4. Sơ đồ quan hệ tạm thời
 
@@ -138,7 +140,7 @@ Chỉ điền cột Quan sát sau khi chạy SQL profile. “Đang chờ” khô
 | Số dòng | customer 17.415; sales 51.290; product 28.356; region 3.828; tổng 100.889 | Đạt; ngày profile chưa ghi |
 | Khóa ứng viên | 4 khóa có non-null = distinct = row count; duplicate queries rỗng | Đạt theo output đã gửi |
 | Grain ecom_sales | 51.290 dòng, 25.728 đơn, 12.793 đơn nhiều dòng, tối đa 14 dòng/đơn | Đạt cho grain; row_id được xác nhận duy nhất |
-| Referential integrity | Biết null/orphan cho 3 quan hệ | Đã đo: customer 0/0; product 0/2; region 0/2 (null/orphan); cần phân loại orphan bằng query 9a |
+| Referential integrity | Biết null/orphan cho 3 quan hệ | Đã đo: customer 0/0; product 0/2; region 0/2 (null/orphan); orphan union 3 dòng, sales 506, profit 253 |
 | Cột đo lường | Các cột fact profile không null; quantity/sales không âm hoặc bằng 0; profit âm có tồn tại | Đạt theo output đã gửi |
 | Đơn vị discount | Range 0–0,85, avg 0,142883; 29.470/51.290 dòng có discount = 0 | Đạt; báo cáo theo phần trăm cần nhân 100 |
 | Độ phủ ngày | 2020-01-01 đến 2023-12-31, có đủ 48 tháng | Đạt cho độ phủ tháng; đủ dữ liệu YoY |
@@ -150,7 +152,7 @@ Chỉ điền cột Quan sát sau khi chạy SQL profile. “Đang chờ” khô
 
 | Ngày | Câu hỏi / phát hiện | Bằng chứng | Quyết định / tác động |
 |---|---|---|---|
-| Chưa ghi ngày | Profile lần đầu: product/region có orphan fact | Kết quả query 9: customer 0 orphan, product 2, region 2; không có khóa fact null | Giữ nguyên fact rows; chạy query 9a để tìm mã bị thiếu và tổng sales/profit ảnh hưởng; sau đó chọn cách biểu diễn unknown dimension ở Silver/Gold. |
+| Chưa ghi ngày | Profile lần đầu: có 3 dòng fact duy nhất thiếu dimension match | Query 9a: product PPR000002/PPR000010; region RRR0001; 1 dòng trùng ở cả hai nhóm; sales ảnh hưởng 506, profit 253 | Không tự map mã; giữ fact và khóa nguồn, dùng left join/nhãn unmatched ở Silver/Gold để tránh mất số liệu. |
 
 ## 8. Điều kiện hoàn thành giai đoạn 1
 
