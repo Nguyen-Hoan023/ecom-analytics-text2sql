@@ -1,6 +1,6 @@
 # Giai đoạn 1 — Hiểu nguồn dữ liệu và chốt data contract
 
-**Trạng thái:** profile nguồn đã đo; join exceptions đã định lượng. Còn thiếu ngày chạy và market-domain output để hoàn tất baseline M1.
+**Trạng thái:** đã đo profile nguồn, join exceptions và các domain category/segment/market. Ngày chạy profile chưa được ghi; metric contract và một số giả định nghiệp vụ vẫn cần chốt trước khi đóng M1.
 
 ## 1. Mục tiêu và phạm vi
 
@@ -46,10 +46,13 @@ Ngày chạy chưa được ghi lại trong kết quả gửi qua chat; cần b�
 | Thời gian | Từ 2020-01-01 đến 2023-12-31; kết quả có đủ 48 tháng liên tục. |
 | customer.gender | Kết quả được gửi cho thấy 124/17.415 giá trị null (khoảng 0,71%). Cần xác nhận đây là cột duy nhất có null trong output đầy đủ. |
 | Join coverage | Không có fact key null. Customer orphan 0; product orphan 2; region orphan 2. Hai tập trùng 1 dòng, tổng cộng 3 dòng fact duy nhất ảnh hưởng, sales 506 và profit 253. |
+| Market / region | 23 cặp market-region; tổng 3.828 region rows và 3.828 region_code phân biệt. Africa 321; Asia Pacific 931; Europe 1.281; LATAM 645; USCA 650. Trong từng cặp, region_rows = distinct_region_codes. |
 
 Product có 28.356 product_code duy nhất. Các danh mục quan sát là Body care, Face care, Hair care, Home and Accessories, Make up; đây không phải Office Supplies/Furniture/Technology như mô tả context.
 
 Tổng product theo category từ kết quả 17 nhóm category/subcategory: Body care 11.548; Face care 1.885; Hair care 4.070; Home and Accessories 5.912; Make up 4.941. Tổng 28.356. Trong từng nhóm category/subcategory, product_rows bằng distinct_product_codes.
+
+Miền địa lý có 5 market (Africa, Asia Pacific, Europe, LATAM, USCA) và 23 region. Tổng theo market cộng đúng 3.828 region_code. Kết quả chỉ xác nhận miền giá trị và tính duy nhất của region_code theo từng cặp market-region; chưa xác nhận tính đúng đắn địa lý bên ngoài nguồn.
 
 Chi tiết orphan từ query 9a: product_code PPR000002 có 1 dòng (2021-09-01, sales 20, profit 10); product_code PPR000010 có 1 dòng (2020-04-04, sales 70, profit 35); region_code RRR0001 có 2 dòng (2020-04-04, sales 486, profit 243). Có 1 dòng vừa thiếu product vừa thiếu region, nên tổng ảnh hưởng duy nhất là 3 dòng, sales 506, profit 253. Không có cơ sở để suy đoán mã dimension thay thế.
 
@@ -68,6 +71,7 @@ Chi tiết orphan từ query 9a: product_code PPR000002 có 1 dòng (2021-09-01,
 4. Sales/profit cộng theo segment là 6.517.674 và 1.065.413,58, khớp tổng trong README tham khảo. Dữ liệu bao phủ bốn năm; không diễn giải tổng này thành doanh thu một năm.
 5. Discount live nằm trong 0–0,85 và có trung bình 0,142883; 11.041 dòng và 5.496 đơn có profit âm. Đây là baseline mô tả, chưa chứng minh discount gây ra lỗ.
 6. Join coverage: customer khớp đủ; product và region mỗi quan hệ thiếu match cho 2 dòng fact, trong đó 1 dòng trùng ở cả hai nhóm. Nếu inner join cả hai dimension thì mất 3 dòng, sales 506 và profit 253. Giữ nguyên fact và mã nguồn; khi cần enrich hãy dùng left join, đánh dấu unmatched, và không tự suy đoán dimension.
+7. Taxonomy địa lý live có 5 market và 23 region; các nhãn market quan sát được là Africa, Asia Pacific, Europe, LATAM và USCA. Không gộp/đổi tên nhãn theo context tham khảo khi chưa có mapping chính thức; dùng taxonomy live làm dữ liệu đầu vào cho modeling và ghi rõ phạm vi so sánh.
 
 ## 4. Sơ đồ quan hệ tạm thời
 
@@ -146,7 +150,7 @@ Chỉ điền cột Quan sát sau khi chạy SQL profile. “Đang chờ” khô
 | Cột đo lường | Các cột fact profile không null; quantity/sales không âm hoặc bằng 0; profit âm có tồn tại | Đạt theo output đã gửi |
 | Đơn vị discount | Range 0–0,85, avg 0,142883; 29.470/51.290 dòng có discount = 0 | Đạt; báo cáo theo phần trăm cần nhân 100 |
 | Độ phủ ngày | 2020-01-01 đến 2023-12-31, có đủ 48 tháng | Đạt cho độ phủ tháng; đủ dữ liệu YoY |
-| Miền category/segment/market | Đã thấy category mỹ phẩm/chăm sóc cá nhân và segment Self-Employed; market chưa được gửi | Một phần; cần đối chiếu market và context |
+| Miền category/segment/market | Category mỹ phẩm/chăm sóc cá nhân; segment Consumer/Corporate/Self-Employed; 5 market, 23 region, tổng 3.828 region_code | Đã đo; taxonomy market live khác các nhãn trong context tham khảo, không tự chuẩn hóa |
 | Metric contract | Đã đo doanh thu/lợi nhuận và đơn lỗ; RFM/churn heuristic còn cần chốt ngưỡng | Một phần |
 | Lệch so với reference | Customer attributes, categories/SKU, segment khác context; tổng theo segment khớp README | Đã ghi lệch; cần xác nhận tài liệu mô tả cũ hay khác phiên bản |
 
@@ -155,6 +159,7 @@ Chỉ điền cột Quan sát sau khi chạy SQL profile. “Đang chờ” khô
 | Ngày | Câu hỏi / phát hiện | Bằng chứng | Quyết định / tác động |
 |---|---|---|---|
 | Chưa ghi ngày | Profile lần đầu: có 3 dòng fact duy nhất thiếu dimension match | Query 9a: product PPR000002/PPR000010; region RRR0001; 1 dòng trùng ở cả hai nhóm; sales ảnh hưởng 506, profit 253 | Không tự map mã; giữ fact và khóa nguồn, dùng left join/nhãn unmatched ở Silver/Gold để tránh mất số liệu. |
+| Chưa ghi ngày | Domain market/region của nguồn live đã được gửi | 23 cặp market-region; Africa 321, Asia Pacific 931, Europe 1.281, LATAM 645, USCA 650; tổng 3.828; mỗi cặp không có trùng region_code | Giữ nhãn và cấp địa lý đúng như nguồn; chỉ tạo mapping sang context/reference nếu xác minh được quy tắc nghiệp vụ. |
 
 ## 8. Điều kiện hoàn thành giai đoạn 1
 
