@@ -47,7 +47,7 @@ uv sync --active
 
 `--active` yêu cầu uv đồng bộ môi trường đang activate thay vì tự tạo `.venv` mới trong repo. Nếu chưa khai báo credentials, config sẽ báo tên trường cần điền khi được gọi; giai đoạn setup không cần kết nối nguồn.
 
-## Phạm vi chưa làm trong giai đoạn này
+## Phạm vi tại thời điểm kết thúc giai đoạn 2
 
 - Chưa đọc transaction từ SQL Server hay tạo warehouse có dữ liệu.
 - Chưa transform Bronze/Silver/Gold.

@@ -2,37 +2,21 @@
 
 from __future__ import annotations
 
-import pymssql
+from sqlalchemy import text
 
 from ingestion.config import Settings
-
-
-def _redact_secrets(message: str, *secrets: str) -> str:
-    for secret in secrets:
-        if secret:
-            message = message.replace(secret, "[REDACTED]")
-    return message
+from ingestion.sqlserver import create_source_engine, redact_source_secrets
 
 
 def main() -> None:
     settings = Settings.from_env()
-    connection = None
-    cursor = None
+    engine = create_source_engine(settings)
 
     try:
-        connection = pymssql.connect(
-            server=settings.sqlserver_host,
-            port=str(settings.sqlserver_port),
-            user=settings.sqlserver_username,
-            password=settings.sqlserver_password,
-            database=settings.sqlserver_database,
-            login_timeout=15,
-            timeout=15,
-            encryption="require",
-        )
-        cursor = connection.cursor()
-        cursor.execute("SELECT DB_NAME(), CAST(1 AS int);")
-        database_name, check_value = cursor.fetchone()
+        with engine.connect() as connection:
+            database_name, check_value = connection.execute(
+                text("SELECT DB_NAME(), CAST(1 AS int);")
+            ).one()
 
         if check_value != 1:
             raise RuntimeError("The read-only smoke query returned an unexpected result.")
@@ -43,17 +27,12 @@ def main() -> None:
             "Read-only smoke query returned 1."
         )
     except Exception as exc:
-        message = _redact_secrets(
-            str(exc), settings.sqlserver_password, settings.sqlserver_username
-        )
+        message = redact_source_secrets(str(exc), settings)
         raise SystemExit(
             f"SQL Server connection check failed ({type(exc).__name__}): {message}"
         ) from None
     finally:
-        if cursor is not None:
-            cursor.close()
-        if connection is not None:
-            connection.close()
+        engine.dispose()
 
 
 if __name__ == "__main__":
