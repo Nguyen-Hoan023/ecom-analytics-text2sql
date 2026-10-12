@@ -13,9 +13,11 @@ A learning project to rebuild an end-to-end analytics pipeline from the Xóm E-C
 
 **Phase 1 — source understanding and data contract:** source profile and metric contract v1 are recorded in the docs. The latest profile run is recorded at `2026-10-10 14:25:29.4548071 UTC`. Customer joins match; three unique sales rows are missing product/region matches (sales 506, profit 253). v1 assumptions are explicit, including source `sales` gross/net semantics and heuristic VIP/churn thresholds; validate them during analysis.
 
-**Phase 2 — project setup:** Python 3.11 dependencies are locked in `uv.lock` and installed into the existing workspace venv. `.env.example` and a validated settings module are ready; source credentials have not been added and SQL Server has not been contacted. See [Phase 2: Project setup](docs/phase-02-project-setup.md).
+**Phase 2 — project setup:** Python 3.11 dependencies are locked in `uv.lock` and installed into the existing workspace venv. `.env.example` and a validated settings module are ready; the actual SQL password remains local, and no source data has been queried. See [Phase 2: Project setup](docs/phase-02-project-setup.md).
 
-Start here: [Phase 1: Data understanding](docs/phase-01-data-understanding.md), [read-only SQL profile](sql/phase_01_profile.sql), and [Phase 2 setup guide](docs/phase-02-project-setup.md).
+**Phase 3 — source connection:** the local `.env` has the non-secret SQL Server settings. DNS and TCP port 1433 are reachable; SQL authentication is pending the local password entry. A read-only connection smoke check is documented in [Phase 3: SQL Server connection](docs/phase-03-source-connection.md).
+
+Start here: [Phase 1: Data understanding](docs/phase-01-data-understanding.md), [read-only SQL profile](sql/phase_01_profile.sql), [Phase 2 setup guide](docs/phase-02-project-setup.md), and [Phase 3 connection guide](docs/phase-03-source-connection.md).
 
 ## Planned stages
 
