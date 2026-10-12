@@ -13,7 +13,9 @@ A learning project to rebuild an end-to-end analytics pipeline from the Xóm E-C
 
 **Phase 1 — source understanding and data contract:** source profile and metric contract v1 are recorded in the docs. The latest profile run is recorded at `2026-10-10 14:25:29.4548071 UTC`. Customer joins match; three unique sales rows are missing product/region matches (sales 506, profit 253). v1 assumptions are explicit, including source `sales` gross/net semantics and heuristic VIP/churn thresholds; validate them during analysis.
 
-Start here: [Phase 1: Data understanding](docs/phase-01-data-understanding.md) and [read-only SQL profile](sql/phase_01_profile.sql).
+**Phase 2 — project setup:** Python 3.11 dependencies are locked in `uv.lock` and installed into the existing workspace venv. `.env.example` and a validated settings module are ready; source credentials have not been added and SQL Server has not been contacted. See [Phase 2: Project setup](docs/phase-02-project-setup.md).
+
+Start here: [Phase 1: Data understanding](docs/phase-01-data-understanding.md), [read-only SQL profile](sql/phase_01_profile.sql), and [Phase 2 setup guide](docs/phase-02-project-setup.md).
 
 ## Planned stages
 

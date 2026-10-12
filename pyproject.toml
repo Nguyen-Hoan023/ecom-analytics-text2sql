@@ -1,0 +1,16 @@
+[project]
+name = "xom-ecom-analytics-text2sql"
+version = "0.1.0"
+description = "Learning project for the Xom E-Com analytics and Text-to-SQL pipeline."
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "dlt[duckdb,sql_database]>=1.31,<2.0",
+    "dbt-duckdb>=1.9,<2.0",
+    "pymssql>=2.3,<3.0",
+    "python-dotenv>=1.0,<2.0",
+]
+
+[tool.uv]
+# This repository is an application project; it is run from the repository root.
+package = false
