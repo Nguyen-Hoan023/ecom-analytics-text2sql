@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: stg_ecom_sales
+    description: "One row per source sales line. Source keys are retained for later join-quality analysis."
+    columns:
+      - name: sales_line_id
+        description: "Renamed source row_id; unique key for a sales line."
+        data_tests:
+          - not_null
+          - unique
+
+      - name: discount
+        description: "Source discount value retained as decimal; no percentage conversion is applied here."
+
+      - name: sales
+        description: "Source sales measure retained without assuming whether it is gross or net."
+
+      - name: profit
+        description: "Source profit measure retained without adjustment."

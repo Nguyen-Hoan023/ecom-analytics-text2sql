@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: "Customer attributes prepared for analytics; names and email are excluded."
+    columns:
+      - name: customer_id
+        description: "Customer key used to join sales to customer attributes."
+        data_tests:
+          - not_null
+          - unique

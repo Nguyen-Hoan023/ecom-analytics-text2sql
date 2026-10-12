@@ -1,0 +1,42 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: "DLT snapshot of the source e-commerce tables."
+    schema: bronze
+    tables:
+      - name: customer
+        description: "Customer records from the source system."
+        columns:
+          - name: customer_id
+            description: "Customer key."
+            data_tests:
+              - not_null
+              - unique
+
+      - name: ecom_sales
+        description: "Sales transaction lines from the source system."
+        columns:
+          - name: row_id
+            description: "Unique source row key."
+            data_tests:
+              - not_null
+              - unique
+
+      - name: product
+        description: "Product records from the source system."
+        columns:
+          - name: product_code
+            description: "Product key."
+            data_tests:
+              - not_null
+              - unique
+
+      - name: region
+        description: "Region records from the source system."
+        columns:
+          - name: region_code
+            description: "Region key."
+            data_tests:
+              - not_null
+              - unique

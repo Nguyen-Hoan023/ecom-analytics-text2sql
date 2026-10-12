@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: int_sales_enriched
+    description: "Sales lines enriched with customer, product, and region attributes using left joins."
+    columns:
+      - name: sales_line_id
+        description: "One row per sales line; must remain unique after dimension joins."
+        data_tests:
+          - not_null
+          - unique

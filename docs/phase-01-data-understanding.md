@@ -54,7 +54,7 @@ Tổng product theo category từ kết quả 17 nhóm category/subcategory: Bod
 
 Miền địa lý có 5 market (Africa, Asia Pacific, Europe, LATAM, USCA) và 23 region. Tổng theo market cộng đúng 3.828 region_code. Kết quả chỉ xác nhận miền giá trị và tính duy nhất của region_code theo từng cặp market-region; chưa xác nhận tính đúng đắn địa lý bên ngoài nguồn.
 
-Chi tiết orphan từ query 9a: product_code PPR000002 có 1 dòng (2021-09-01, sales 20, profit 10); product_code PPR000010 có 1 dòng (2020-04-04, sales 70, profit 35); region_code RRR0001 có 2 dòng (2020-04-04, sales 486, profit 243). Có 1 dòng vừa thiếu product vừa thiếu region, nên tổng ảnh hưởng duy nhất là 3 dòng, sales 506, profit 253. Không có cơ sở để suy đoán mã dimension thay thế.
+Chi tiết orphan từ query 9a: product_code PPP000002 có 1 dòng (2021-09-01, sales 20, profit 10); product_code PPP000010 có 1 dòng (2020-04-04, sales 70, profit 35); region_code RRR0001 có 2 dòng (2020-04-04, sales 486, profit 243). Có 1 dòng vừa thiếu product vừa thiếu region, nên tổng ảnh hưởng duy nhất là 3 dòng, sales 506, profit 253. Không có cơ sở để suy đoán mã dimension thay thế.
 
 ### Danh mục cột
 
@@ -72,7 +72,7 @@ Chi tiết orphan từ query 9a: product_code PPR000002 có 1 dòng (2021-09-01,
 5. Discount live nằm trong 0–0,85 và có trung bình 0,142883; 11.041 dòng và 5.496 đơn có profit âm. Đây là baseline mô tả, chưa chứng minh discount gây ra lỗ.
 6. Join coverage: customer khớp đủ; product và region mỗi quan hệ thiếu match cho 2 dòng fact, trong đó 1 dòng trùng ở cả hai nhóm. Nếu inner join cả hai dimension thì mất 3 dòng, sales 506 và profit 253. Giữ nguyên fact và mã nguồn; khi cần enrich hãy dùng left join, đánh dấu unmatched, và không tự suy đoán dimension.
 7. Taxonomy địa lý live có 5 market và 23 region; các nhãn market quan sát được là Africa, Asia Pacific, Europe, LATAM và USCA. Không gộp/đổi tên nhãn theo context tham khảo khi chưa có mapping chính thức; dùng taxonomy live làm dữ liệu đầu vào cho modeling và ghi rõ phạm vi so sánh.
-
+8. Taxonomy sản phẩm có dấu hiệu không nhất quán: truy vấn đối chiếu `stg_products` cho thấy một số mã có tên sản phẩm và category/subcategory không ăn khớp, ví dụ P000115 (Body care / hand creams), P000222 (Make up / Eye shadows and pencils), P002156 (Face care / face moisturizing products), P002215 (Hair care / hair colors and toners). Đây là giá trị lấy từ dimension nguồn. Giữ nguyên nhãn nguồn, không tự sửa category dựa trên tên sản phẩm. Vì vậy, các phân tích gộp theo category cần được xem là tạm thời cho tới khi có mapping đáng tin cậy. Trong `mart_product_performance`, giữ sản phẩm `Unknown` để đối soát nhưng không xếp hạng chúng trong Top sản phẩm theo category.
 ## 4. Sơ đồ quan hệ tạm thời
 
 ```text
@@ -166,6 +166,7 @@ Chỉ điền cột Quan sát sau khi chạy SQL profile. “Đang chờ” khô
 | 2026-10-10 | Profile ghi nhận 3 dòng fact duy nhất thiếu dimension match | Query 9a: product PPR000002/PPR000010; region RRR0001; 1 dòng trùng ở cả hai nhóm; sales ảnh hưởng 506, profit 253 | Không tự map mã; giữ fact và khóa nguồn, dùng left join/nhãn unmatched ở Silver/Gold để tránh mất số liệu. |
 | 2026-10-10 | Domain market/region của nguồn live đã được gửi | 23 cặp market-region; Africa 321, Asia Pacific 931, Europe 1.281, LATAM 645, USCA 650; tổng 3.828; mỗi cặp không có trùng region_code | Giữ nhãn và cấp địa lý đúng như nguồn; chỉ tạo mapping sang context/reference nếu xác minh được quy tắc nghiệp vụ. |
 | 2026-10-10 | Chốt metric contract v1 theo bộ quy ước đề xuất | Quy ước grain/công thức, left join, RFM, VIP M=5, inactivity 90 ngày, category revenue mix và market basket support 0,5% | Áp dụng thống nhất trong dbt Gold và Text-to-SQL; công khai giả định sales gross/net chưa rõ và kiểm tra sensitivity cho các ngưỡng. |
+| 2026-10-12 | Phát hiện category/subcategory sản phẩm có dấu hiệu không khớp tên sản phẩm | Truy vấn `stg_products` trả về các ví dụ P000115, P000222, P002156, P002215; truy vấn mart xác nhận nhóm `Unknown` vẫn được giữ nhưng không được xếp hạng | Giữ nguyên taxonomy nguồn; không tự suy đoán mapping. Ghi chú hạn chế khi diễn giải kết quả theo category. |
 
 ## 8. Điều kiện hoàn thành giai đoạn 1
 

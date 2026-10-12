@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: stg_products
+    description: "Product attributes prepared for analytics."
+    columns:
+      - name: product_code
+        description: "Product key."
+        data_tests:
+          - not_null
+          - unique
