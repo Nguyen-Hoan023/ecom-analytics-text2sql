@@ -1,0 +1,54 @@
+version: 2
+
+models:
+  - name: mart_discount_profitability
+    description: >
+      Một dòng cho mỗi cặp category và discount_band. Tỷ lệ loss_making_line_rate
+      tính trên dòng giao dịch, không phải trên đơn hàng.
+    columns:
+      - name: category
+        description: Category nguồn; dùng Unknown khi không khớp product dimension.
+        data_tests:
+          - not_null
+
+      - name: discount_band
+        description: >
+          Các nhóm discount: 0%, (0-20%], (20-40%], (40-60%], >60% hoặc Unknown.
+        data_tests:
+          - not_null
+
+      - name: sales_line_count
+        description: Số dòng giao dịch trong nhóm.
+        data_tests:
+          - not_null
+
+      - name: orders_with_sales_lines
+        description: Số order_id phân biệt trong nhóm.
+        data_tests:
+          - not_null
+
+      - name: avg_discount
+        description: Discount trung bình theo dòng; có thể NULL nếu discount nguồn bị thiếu.
+
+      - name: total_sales
+        description: Tổng sales nguồn trong nhóm.
+        data_tests:
+          - not_null
+
+      - name: total_profit
+        description: Tổng profit trong nhóm.
+        data_tests:
+          - not_null
+
+      - name: profit_margin
+        description: Tổng profit chia tổng sales; có thể NULL nếu tổng sales bằng 0.
+
+      - name: loss_making_line_count
+        description: Số dòng giao dịch có profit nhỏ hơn 0.
+        data_tests:
+          - not_null
+
+      - name: loss_making_line_rate
+        description: Số dòng lỗ chia tổng số dòng giao dịch trong nhóm.
+        data_tests:
+          - not_null

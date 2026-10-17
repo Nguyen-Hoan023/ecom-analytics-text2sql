@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: mart_loss_making_orders_by_segment
+    description: >
+      Một dòng cho mỗi segment. Đơn hàng được xem là lỗ khi tổng profit
+      của các dòng thuộc đơn đó nhỏ hơn 0.
+    columns:
+      - name: segment
+        description: Segment của đơn hàng; giá trị null được gán Unknown.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: order_count
+        description: Tổng số đơn hàng trong segment.
+        data_tests:
+          - not_null
+
+      - name: loss_making_order_count
+        description: Số đơn có tổng profit nhỏ hơn 0.
+        data_tests:
+          - not_null
+
+      - name: loss_making_order_rate
+        description: Số đơn lỗ chia cho tổng số đơn hàng trong segment.
+        data_tests:
+          - not_null

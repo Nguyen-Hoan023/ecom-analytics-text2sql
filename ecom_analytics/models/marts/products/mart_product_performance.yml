@@ -1,0 +1,69 @@
+version: 2
+
+models:
+  - name: mart_product_performance
+    description: >
+      Một dòng cho mỗi product_code. units_sold_rank xếp hạng toàn bộ sản phẩm
+      theo units sold; category_profit_rank xếp hạng profit trong category.
+    columns:
+      - name: product_code
+        description: Mã sản phẩm, gồm cả mã orphan được giữ để đối soát.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: product_name
+        description: Tên sản phẩm; dùng Unknown product nếu không khớp dimension.
+        data_tests:
+          - not_null
+
+      - name: category
+        description: Category nguồn; dùng Unknown nếu không khớp dimension.
+        data_tests:
+          - not_null
+
+      - name: subcategory
+        description: Subcategory nguồn; dùng Unknown nếu không khớp dimension.
+        data_tests:
+          - not_null
+
+      - name: sales_line_count
+        description: Số dòng giao dịch của sản phẩm.
+        data_tests:
+          - not_null
+
+      - name: order_count
+        description: Số order_id phân biệt có sản phẩm.
+        data_tests:
+          - not_null
+
+      - name: units_sold
+        description: Tổng quantity đã bán.
+        data_tests:
+          - not_null
+
+      - name: total_sales
+        description: Tổng sales nguồn của sản phẩm.
+        data_tests:
+          - not_null
+
+      - name: total_profit
+        description: Tổng profit của sản phẩm.
+        data_tests:
+          - not_null
+
+      - name: profit_margin
+        description: Tổng profit chia tổng sales của sản phẩm.
+        data_tests:
+          - not_null
+
+      - name: units_sold_rank
+        description: Xếp hạng toàn cục theo units_sold; product_code phá hòa.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: category_profit_rank
+        description: >
+          Xếp hạng profit trong category; NULL cho category Unknown để sản phẩm
+          orphan không tham gia Top sản phẩm theo category.

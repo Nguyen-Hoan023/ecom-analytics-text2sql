@@ -1,0 +1,38 @@
+version: 2
+
+models:
+  - name: mart_profitability_by_market
+    description: >
+      Profit margin và các chỉ số sales theo market. Một dòng cho mỗi market;
+      giao dịch có region không khớp được giữ trong nhóm Unknown.
+    columns:
+      - name: market
+        description: Market từ dữ liệu region; NULL hoặc rỗng được gán Unknown.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: sales_line_count
+        description: Số dòng giao dịch trong market.
+        data_tests:
+          - not_null
+
+      - name: order_count
+        description: Số order_id phân biệt trong từng market.
+        data_tests:
+          - not_null
+
+      - name: total_sales
+        description: Tổng sales nguồn trong market.
+        data_tests:
+          - not_null
+
+      - name: total_profit
+        description: Tổng profit nguồn trong market.
+        data_tests:
+          - not_null
+
+      - name: profit_margin
+        description: Tổng profit chia tổng sales trong market.
+        data_tests:
+          - not_null

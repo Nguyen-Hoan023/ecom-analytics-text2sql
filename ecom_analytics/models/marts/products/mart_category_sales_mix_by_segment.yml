@@ -1,0 +1,47 @@
+version: 2
+
+models:
+  - name: mart_category_sales_mix_by_segment
+    description: >
+      Sales mix theo segment và category. Tỷ trọng category được tính trên
+      tổng sales của segment; đây không phải phân tích giỏ hàng mua kèm.
+    columns:
+      - name: segment
+        description: Segment nguồn; NULL hoặc rỗng được gán Unknown.
+        data_tests:
+          - not_null
+
+      - name: category
+        description: Category từ dimension product; NULL hoặc rỗng được gán Unknown.
+        data_tests:
+          - not_null
+
+      - name: sales_line_count
+        description: Số dòng giao dịch trong segment-category.
+        data_tests:
+          - not_null
+
+      - name: order_count
+        description: Số order_id phân biệt trong segment-category.
+        data_tests:
+          - not_null
+
+      - name: total_sales
+        description: Tổng sales nguồn trong segment-category.
+        data_tests:
+          - not_null
+
+      - name: total_profit
+        description: Tổng profit nguồn trong segment-category.
+        data_tests:
+          - not_null
+
+      - name: segment_total_sales
+        description: Tổng sales của segment, lặp lại trên các category của segment.
+        data_tests:
+          - not_null
+
+      - name: sales_share_of_segment
+        description: Tỷ trọng total_sales của category trong tổng sales của segment.
+        data_tests:
+          - not_null

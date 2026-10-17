@@ -1,0 +1,38 @@
+version: 2
+
+models:
+  - name: mart_sales_by_segment
+    description: >
+      Một dòng cho mỗi segment. Sales và profit được cộng từ các dòng
+      giao dịch trong phạm vi dữ liệu hiện có.
+    columns:
+      - name: segment
+        description: Segment lấy từ bảng giao dịch; giá trị null được gán Unknown.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: sales_line_count
+        description: Số dòng giao dịch trong segment.
+        data_tests:
+          - not_null
+
+      - name: order_count
+        description: Số order_id phân biệt trong segment.
+        data_tests:
+          - not_null
+
+      - name: total_sales
+        description: Tổng sales nguồn; chưa kết luận sales là gross hay net.
+        data_tests:
+          - not_null
+
+      - name: total_profit
+        description: Tổng profit nguồn.
+        data_tests:
+          - not_null
+
+      - name: profit_margin
+        description: Tổng profit chia tổng sales, tức margin có trọng số.
+        data_tests:
+          - not_null

@@ -1,0 +1,45 @@
+version: 2
+
+models:
+  - name: mart_monthly_sales
+    description: >
+      Một dòng cho mỗi tháng. Sales YoY được tính so với cùng tháng của năm trước.
+    columns:
+      - name: sales_month
+        description: Ngày đầu tiên của tháng.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: sales_line_count
+        description: Số dòng giao dịch trong tháng.
+        data_tests:
+          - not_null
+
+      - name: order_count
+        description: Số order_id phân biệt trong tháng.
+        data_tests:
+          - not_null
+
+      - name: total_sales
+        description: Tổng sales nguồn trong tháng.
+        data_tests:
+          - not_null
+
+      - name: total_profit
+        description: Tổng profit trong tháng.
+        data_tests:
+          - not_null
+
+      - name: profit_margin
+        description: Tổng profit chia tổng sales trong tháng.
+        data_tests:
+          - not_null
+
+      - name: prior_year_sales
+        description: Sales của cùng tháng năm trước; NULL nếu không có dữ liệu năm trước.
+
+      - name: sales_yoy_growth_rate
+        description: >
+          Tỷ lệ tăng trưởng sales so với cùng tháng năm trước; NULL nếu không có
+          prior-year sales để tính.

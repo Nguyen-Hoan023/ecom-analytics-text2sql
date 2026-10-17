@@ -1,0 +1,48 @@
+version: 2
+
+models:
+  - name: mart_customer_region_behavior
+    description: >
+      Một dòng cho mỗi customer. matched_region_count chỉ đếm region_code
+      khớp dimension; giao dịch orphan region được ghi nhận riêng.
+    columns:
+      - name: customer_id
+        data_tests:
+          - not_null
+          - unique
+
+      - name: sales_line_count
+        data_tests:
+          - not_null
+
+      - name: matched_region_count
+        data_tests:
+          - not_null
+
+      - name: is_multi_region_customer
+        data_tests:
+          - not_null
+
+      - name: orphan_region_sales_line_count
+        data_tests:
+          - not_null
+
+      - name: has_orphan_region_activity
+        data_tests:
+          - not_null
+
+      - name: total_sales
+        data_tests:
+          - not_null
+
+      - name: total_profit
+        data_tests:
+          - not_null
+
+      - name: orphan_region_sales
+        data_tests:
+          - not_null
+
+      - name: orphan_region_profit
+        data_tests:
+          - not_null

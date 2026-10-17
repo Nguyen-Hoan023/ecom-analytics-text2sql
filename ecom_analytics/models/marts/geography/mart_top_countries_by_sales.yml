@@ -1,0 +1,43 @@
+version: 2
+
+models:
+  - name: mart_top_countries_by_sales
+    description: >
+      Top 15 quốc gia theo total_sales, cộng thêm nhóm Unknown để giữ
+      các giao dịch không khớp country. Một dòng cho mỗi quốc gia trong kết quả.
+    columns:
+      - name: country
+        description: Country nguồn; NULL hoặc rỗng được gán Unknown.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: sales_line_count
+        description: Số dòng giao dịch của quốc gia.
+        data_tests:
+          - not_null
+
+      - name: order_count
+        description: Số order_id phân biệt trong quốc gia.
+        data_tests:
+          - not_null
+
+      - name: total_sales
+        description: Tổng sales nguồn; chưa kết luận sales là gross hay net.
+        data_tests:
+          - not_null
+
+      - name: total_profit
+        description: Tổng profit nguồn.
+        data_tests:
+          - not_null
+
+      - name: profit_margin
+        description: Tổng profit chia tổng sales.
+        data_tests:
+          - not_null
+
+      - name: sales_rank
+        description: Thứ hạng theo total_sales; NULL cho nhóm Unknown.
+        data_tests:
+          - unique

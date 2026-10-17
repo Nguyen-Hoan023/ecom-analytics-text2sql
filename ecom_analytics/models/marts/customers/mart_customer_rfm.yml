@@ -1,0 +1,53 @@
+version: 2
+
+models:
+  - name: mart_customer_rfm
+    description: >
+      Một dòng cho mỗi customer tại snapshot date. Customer không có lịch sử
+      mua được giữ lại với trạng thái no_purchase_history.
+    columns:
+      - name: customer_id
+        description: Khóa customer.
+        data_tests:
+          - not_null
+          - unique
+
+      - name: snapshot_date
+        description: Ngày snapshot dùng để tính Recency.
+        data_tests:
+          - not_null
+
+      - name: last_order_date
+        description: Ngày mua gần nhất; NULL nếu customer chưa mua hàng.
+
+      - name: recency_days
+        description: Số ngày từ lần mua gần nhất đến snapshot; NULL nếu chưa mua.
+
+      - name: frequency_orders
+        description: Số order_id phân biệt; NULL nếu chưa mua.
+
+      - name: monetary_sales
+        description: Tổng sales nguồn của customer; NULL nếu chưa mua.
+
+      - name: recency_score
+        description: Điểm Recency từ 1 đến 5; NULL nếu chưa mua.
+
+      - name: frequency_score
+        description: Điểm Frequency từ 1 đến 5; NULL nếu chưa mua.
+
+      - name: monetary_score
+        description: Điểm Monetary từ 1 đến 5; NULL nếu chưa mua.
+
+      - name: is_vip
+        description: Customer có Monetary score bằng 5; NULL nếu chưa mua.
+
+      - name: churn_risk_90d
+        description: Tín hiệu inactivity từ 90 ngày; NULL nếu chưa mua.
+
+      - name: vip_churn_risk
+        description: VIP có inactivity từ 90 ngày; NULL nếu chưa mua.
+
+      - name: rfm_status
+        description: Trạng thái scored hoặc no_purchase_history.
+        data_tests:
+          - not_null

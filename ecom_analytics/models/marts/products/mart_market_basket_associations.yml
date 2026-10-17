@@ -1,0 +1,56 @@
+version: 2
+
+models:
+  - name: mart_market_basket_associations
+    description: >
+      Association rules theo hướng sản phẩm A -> B. Basket được khử trùng
+      theo order_id và product_code. Support mặc định 0.5%; product orphan
+      được giữ nguyên code và đánh dấu unmatched.
+    columns:
+      - name: antecedent_product_code
+        data_tests:
+          - not_null
+
+      - name: antecedent_product_name
+        data_tests:
+          - not_null
+
+      - name: antecedent_match_status
+        data_tests:
+          - not_null
+
+      - name: consequent_product_code
+        data_tests:
+          - not_null
+
+      - name: consequent_product_name
+        data_tests:
+          - not_null
+
+      - name: consequent_match_status
+        data_tests:
+          - not_null
+
+      - name: pair_order_count
+        data_tests:
+          - not_null
+
+      - name: total_valid_orders
+        data_tests:
+          - not_null
+
+      - name: min_pair_order_count
+        data_tests:
+          - not_null
+
+      - name: support
+        data_tests:
+          - not_null
+
+      - name: confidence
+        data_tests:
+          - not_null
+
+      - name: lift
+        data_tests:
+          - not_null

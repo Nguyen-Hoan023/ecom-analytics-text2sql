@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: mart_customer_profile_by_gender_occupation
+    description: >
+      Số customer phân theo gender và occupation. Giá trị NULL được giữ
+      trong nhóm Unknown; mỗi customer được đếm một lần.
+    columns:
+      - name: gender
+        description: Gender nguồn; NULL được gán Unknown.
+        data_tests:
+          - not_null
+
+      - name: occupation
+        description: Occupation nguồn; NULL được gán Unknown.
+        data_tests:
+          - not_null
+
+      - name: customer_count
+        description: Số customer phân biệt trong nhóm gender và occupation.
+        data_tests:
+          - not_null
