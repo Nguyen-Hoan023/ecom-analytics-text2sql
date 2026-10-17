@@ -51,11 +51,10 @@ uv run --active python -m ingestion.profile_source_tables
 uv run --active python -m ingestion.run_pipeline
 ```
 
-## Tiếp theo: giai đoạn dbt
+## Kết quả sau giai đoạn ingestion
 
-1. Khai báo bốn bảng Bronze là sources trong dbt.
-2. Xây Silver models để chuẩn hóa tên cột và kiểu dữ liệu; thêm tests `not_null`, `unique`, relationships.
-3. Giữ các sales rows có product/region không khớp để xử lý theo metric contract.
-4. Sau khi so sánh Silver với profile nguồn, xây Gold marts cho 15 câu hỏi business.
+DLT đã nạp snapshot từ SQL Server vào DuckDB Bronze và đối soát row count thành công cho cả bốn bảng.
+
+Phần triển khai dbt sau ingestion — sources, Silver, Intermediate, Gold marts và validation — được ghi trong [Giai đoạn 4 — dbt transformations](phase-04-dbt-transformation.md).
 
 Chưa chọn incremental load: nguồn chưa có `updated_at` đáng tin cậy để nhận diện bản ghi bị sửa.

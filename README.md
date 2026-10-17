@@ -11,27 +11,27 @@ A learning project to rebuild an end-to-end analytics pipeline from the Xóm E-C
 
 ## Current status
 
-**Phase 1 — source understanding and data contract:** source profile and metric contract v1 are recorded in the docs. The latest profile run is recorded at `2026-10-10 14:25:29.4548071 UTC`. Customer joins match; three unique sales rows are missing product/region matches (sales 506, profit 253). v1 assumptions are explicit, including source `sales` gross/net semantics and heuristic VIP/churn thresholds; validate them during analysis.
+## Current status
 
-**Phase 2 — project setup:** Python 3.11 dependencies are locked in `uv.lock` and installed into the existing workspace venv. `.env.example` and a validated settings module are ready; source credentials stay in the ignored local `.env`. See [Phase 2: Project setup](docs/phase-02-project-setup.md).
-
-**Phase 3 — ingestion:** DLT loaded a full snapshot of all four SQL Server tables into the local DuckDB `bronze` dataset. Source and target row counts match. See [Phase 3: SQL Server to DuckDB](docs/phase-03-data-ingestion.md).
-
-Start here: [Phase 1: Data understanding](docs/phase-01-data-understanding.md), [read-only SQL profile](sql/phase_01_profile.sql), [Phase 2 setup guide](docs/phase-02-project-setup.md), and [Phase 3 ingestion guide](docs/phase-03-data-ingestion.md).
-
+- **Phase 1 — Data understanding:** Hoàn tất source profile và metric contract v1. Đã ghi nhận các giả định nghiệp vụ, orphan keys và vấn đề taxonomy.
+- **Phase 2 — Project setup:** Hoàn tất môi trường Python, dependency lockfile và cấu hình secrets qua `.env`.
+- **Phase 3 — Ingestion:** DLT đã nạp snapshot từ SQL Server vào DuckDB Bronze. Row count của cả bốn bảng khớp nguồn.
+- **Phase 4 — dbt transformation:** Đã xây Silver, Intermediate và sáu Gold marts. Đang hoàn thiện validation, tài liệu và các câu hỏi phân tích còn thiếu.
+- **Phase 5 — Business analysis:** Đã kiểm tra một phần kết quả marts; chưa hoàn thành đủ 15 câu hỏi.
+- **Phase 6 — Text-to-SQL:** Chưa triển khai.
+- **Phase 7 — Airflow/Cosmos:** Chưa triển khai; sẽ thực hiện sau khi pipeline chạy ổn định độc lập.
 ## Planned stages
 
-| Stage | Outcome |
-|---|---|
-| 1. Understand the source | Verified table grain, candidate keys, join coverage, data quality baseline, metric definitions |
-| 2. Set up the project | Reproducible Python environment, configuration and secret handling |
-| 3. Ingest with DLT | Repeatable SQL Server → DuckDB Bronze load with load metadata |
-| 4. Transform with dbt | Typed/clean Silver models and tested Gold marts |
-| 5. Answer business questions | SQL analyses, validated KPI definitions and documented insights |
-| 6. Add Text-to-SQL | Constrained generation, SQL validation, read-only execution and evaluation cases |
-| 7. Orchestrate with Airflow/Cosmos | Scheduled, observable workflow after each task works independently |
-| 8. Polish and publish | Architecture docs, reproducible setup, CI checks and final project walkthrough |
-
+| Stage | Outcome | Status |
+|---|---|---|
+| 1. Understand the source | Verified source profile and metric contract | Complete |
+| 2. Set up the project | Reproducible Python environment and configuration | Complete |
+| 3. Ingest with DLT | SQL Server snapshot loaded into DuckDB Bronze | Complete |
+| 4. Transform with dbt | Silver, Intermediate and Gold models | In progress |
+| 5. Answer business questions | Complete and validate all 15 questions | In progress |
+| 6. Add Text-to-SQL | Constrained generation, validation and evaluation | Not started |
+| 7. Orchestrate with Airflow/Cosmos | Schedule and monitor the working pipeline | Not started |
+| 8. Polish and publish | Documentation, CI and project walkthrough | Not started |
 ## Security and data handling
 
 - Never commit .env files, API keys, source credentials, local database files, or source extracts.
