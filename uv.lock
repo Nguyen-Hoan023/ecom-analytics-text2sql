@@ -488,6 +488,39 @@ wheels = [
 ]
 
 [[package]]
+name = "ecommerce-analytics-text2sql"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "dbt-duckdb" },
+    { name = "dlt", extra = ["duckdb", "sql-database"] },
+    { name = "duckdb" },
+    { name = "google-genai" },
+    { name = "matplotlib" },
+    { name = "pandas" },
+    { name = "pymssql" },
+    { name = "python-dotenv" },
+    { name = "pyyaml" },
+    { name = "seaborn" },
+    { name = "sqlglot" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "dbt-duckdb", specifier = ">=1.9,<2.0" },
+    { name = "dlt", extras = ["duckdb", "sql-database"], specifier = ">=1.31,<2.0" },
+    { name = "duckdb", specifier = ">=1.4,<2.0" },
+    { name = "google-genai", specifier = ">=2.28,<3.0" },
+    { name = "matplotlib", specifier = ">=3.11.2" },
+    { name = "pandas", specifier = ">=2.2,<4.0" },
+    { name = "pymssql", specifier = ">=2.3,<3.0" },
+    { name = "python-dotenv", specifier = ">=1.0,<2.0" },
+    { name = "pyyaml", specifier = ">=6.0,<7.0" },
+    { name = "seaborn", specifier = ">=0.13.2" },
+    { name = "sqlglot", specifier = ">=30.22,<31.0" },
+]
+
+[[package]]
 name = "fonttools"
 version = "4.67.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1665,39 +1698,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/9e/b0/21547e16a47206ccd
 wheels = [
     { url = "https://files.pythonhosted.org/packages/bb/d6/a48717649fea2d7a6679db86dae9ae4b12078c7a48aa89a8f14a360f29d0/win_precise_time-1.4.2-cp311-cp311-win32.whl", hash = "sha256:59272655ad6f36910d0b585969402386fa627fca3be24acc9a21be1d550e5db8", size = 14703, upload-time = "2023-10-08T17:08:06.945Z" },
     { url = "https://files.pythonhosted.org/packages/f9/9c/46d69220d468c82ca2044284c5a8089705c5eb66be416abcbba156365a14/win_precise_time-1.4.2-cp311-cp311-win_amd64.whl", hash = "sha256:0897bb055f19f3b4336e2ba6bee0115ac20fd7ec615a6d736632e2df77f8851a", size = 14912, upload-time = "2023-10-08T17:08:07.896Z" },
-]
-
-[[package]]
-name = "xom-ecom-analytics-text2sql"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "dbt-duckdb" },
-    { name = "dlt", extra = ["duckdb", "sql-database"] },
-    { name = "duckdb" },
-    { name = "google-genai" },
-    { name = "matplotlib" },
-    { name = "pandas" },
-    { name = "pymssql" },
-    { name = "python-dotenv" },
-    { name = "pyyaml" },
-    { name = "seaborn" },
-    { name = "sqlglot" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "dbt-duckdb", specifier = ">=1.9,<2.0" },
-    { name = "dlt", extras = ["duckdb", "sql-database"], specifier = ">=1.31,<2.0" },
-    { name = "duckdb", specifier = ">=1.4,<2.0" },
-    { name = "google-genai", specifier = ">=2.28,<3.0" },
-    { name = "matplotlib", specifier = ">=3.11.2" },
-    { name = "pandas", specifier = ">=2.2,<4.0" },
-    { name = "pymssql", specifier = ">=2.3,<3.0" },
-    { name = "python-dotenv", specifier = ">=1.0,<2.0" },
-    { name = "pyyaml", specifier = ">=6.0,<7.0" },
-    { name = "seaborn", specifier = ">=0.13.2" },
-    { name = "sqlglot", specifier = ">=30.22,<31.0" },
 ]
 
 [[package]]
