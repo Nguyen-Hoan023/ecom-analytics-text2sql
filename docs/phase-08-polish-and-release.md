@@ -215,6 +215,17 @@ Astro CLI được pin ở **1.46.1**. `astro dev parse` và `astro dev pytest` 
 
 **Trạng thái nghiệm thu:** workflow và contract đã được thêm; chưa có kết quả clean runner từ GitHub Actions trong phiên này. Sau khi push, cần kiểm tra cả hai workflow và chỉ chốt 8.5 sau khi job tương ứng pass. `dbt parse` không thay thế `dbt build`, data tests hoặc DAG acceptance với nguồn dữ liệu thật.
 
+**Sửa lỗi CI lần đầu (2026-10-25):** wrapper tìm `dbt` bằng
+`sysconfig.get_path("scripts")` để giữ đúng scripts directory của virtualenv trên
+Linux, thay vì resolve symlink Python về interpreter gốc. DAG contracts có fixture
+khởi tạo SQLite metadata tạm riêng cho Airflow/Cosmos; pytest không dùng lại metadata
+của container `astro dev parse`. Các tests đọc DAG từ graph đã parse trong bộ nhớ.
+Kiểm chứng local: 53/53 unit tests, 14/14 deterministic guardrail cases, 3/3 DAG
+contracts trong container không mạng, dbt parse trên Windows và Linux virtualenv
+symlink thật, catalog khớp 12 Gold relations. Linux probe dùng dependencies trong
+image có sẵn; đây chưa phải xác nhận workflow trên GitHub runner. Cần push bản sửa
+và kiểm tra run mới trước khi đóng 8.5.
+
 `run_offline_checks` chạy không cần warehouse vì `NaturalLanguageQueryService` chỉ tạo executor khi cần thực thi query. Offline workflow được cấu hình để chạy deterministic checks trên clean runner không cần SQL Server hoặc Gemini; cần GitHub Actions run đầu tiên để nghiệm thu cấu hình này.
 
 **Đạt khi:** fresh runner không có .env/warehouse vẫn pass các job offline; contract cố ý sai làm CI fail đúng; checks ghi tên đúng phạm vi, không báo đã test real data khi chỉ parse.

@@ -99,6 +99,14 @@ Toàn bộ các mục nghiệm thu Phase 6 đã được xác nhận và đóng 
 - [x] 8.6 Q02 walkthrough và evidence index đã được viết, ghi provenance Phase 7 và giới hạn bằng chứng.
 - [ ] 8.7 Git review/checkpoint sau khi xem CI result.
 
+First GitHub CI run failed at dbt executable discovery and Astro DAG pytest.
+The 2026-10-25 local fix uses `sysconfig` for virtualenv scripts and initializes an
+isolated Airflow SQLite metadata database in the DAG test fixture. Local checks
+passed: 53 unit tests, 14 offline guardrail cases, 3 container DAG contracts,
+Windows/Linux dbt parse and the 12-relation catalog contract. GitHub acceptance
+still requires a new run from the fix commit; rerunning the old commit does not
+include these changes. See the Phase 8.5 document for details.
+
 ---
 
 ## 2. Project purpose and architecture

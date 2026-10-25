@@ -67,6 +67,11 @@ Run the project DAG contract tests inside the Astro image:
 astro dev pytest tests/dags
 ```
 
+The DAG tests initialize a separate temporary SQLite database for Airflow metadata
+through `tests/dags/conftest.py`. Cosmos uses Airflow Variables to cache its parsed
+dbt graph, so an empty test container needs initialized metadata even when no tasks
+run. This database is separate from DuckDB and the local stack's PostgreSQL metadata.
+
 Before opening a scheduler shell, make sure no host CLI/UI or manual dbt command is reading the
 same DuckDB file while the DAG refreshes it:
 
@@ -125,6 +130,10 @@ astro dev stop
   full DAG run as described in the operations runbook.
 - **DuckDB is locked:** stop host Text-to-SQL, dbt docs/CLI and other processes using the same
   file before triggering a refresh.
+- **DAG pytest fails with `no such table: variable`:** ensure
+  `tests/dags/conftest.py` is present in the test checkout. The parse and pytest
+  commands use separate containers; metadata created during parse is not reused
+  by pytest. The fixture initializes only temporary Airflow metadata.
 
 For phase decisions, expected outcomes, and acceptance evidence, see
 [`docs/phase-07-airflow-cosmos.md`](../docs/phase-07-airflow-cosmos.md).

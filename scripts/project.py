@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import sys
+import sysconfig
 import tempfile
 from pathlib import Path
 from typing import Sequence
@@ -29,7 +30,9 @@ class ProjectCommandError(RuntimeError):
 
 
 def _find_dbt_executable() -> str | None:
-    candidate = Path(sys.executable).resolve().parent / (
+    # POSIX virtualenv Python executables often symlink to the base interpreter.
+    # sysconfig keeps the active environment's scripts directory in that case.
+    candidate = Path(sysconfig.get_path("scripts")) / (
         "dbt.exe" if os.name == "nt" else "dbt"
     )
     return str(candidate) if candidate.is_file() else None

@@ -11,7 +11,8 @@ DAG_ID = "xom_ecom_warehouse_refresh"
 def _load_dag():
     dag_bag = DagBag(include_examples=False)
     assert not dag_bag.import_errors, dag_bag.import_errors
-    dag = dag_bag.get_dag(DAG_ID)
+    # Inspect the parsed graph directly, without a scheduler/serialized-DAG lookup.
+    dag = dag_bag.dags.get(DAG_ID)
     assert dag is not None, f"Expected DAG {DAG_ID!r} to be loaded"
     return dag
 

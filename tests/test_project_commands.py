@@ -13,6 +13,25 @@ from scripts import project
 
 
 class ProjectCommandTests(unittest.TestCase):
+    def test_dbt_discovery_uses_active_environment_scripts_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            scripts_directory = Path(temporary_directory) / "environment-scripts"
+            scripts_directory.mkdir()
+            dbt_executable = scripts_directory / ("dbt.exe" if os.name == "nt" else "dbt")
+            dbt_executable.touch()
+            # Simulate Python resolving outside the environment, as POSIX venv
+            # symlinks do. dbt must still come from this environment's scripts.
+            with (
+                patch.object(project.sys, "executable", str(Path(temporary_directory) / "base" / "python")),
+                patch.object(project.sysconfig, "get_path", return_value=str(scripts_directory)),
+            ):
+                self.assertEqual(project._find_dbt_executable(), str(dbt_executable))
+
+    def test_dbt_discovery_does_not_fall_back_to_another_environment(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            with patch.object(project.sysconfig, "get_path", return_value=temporary_directory):
+                self.assertIsNone(project._find_dbt_executable())
+
     def test_dbt_parse_uses_repo_paths_temp_profile_and_absolute_warehouse(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             warehouse_path = Path(temporary_directory) / "warehouse.duckdb"
