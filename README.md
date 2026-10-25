@@ -46,28 +46,76 @@ Airflow controls the **batch refresh path**. The Text-to-SQL application is a se
 | Customers | <code>mart_customer_rfm</code>, <code>mart_customer_profile_by_gender_occupation</code>, <code>mart_customer_region_behavior</code> |
 | Geography | <code>mart_profitability_by_market</code>, <code>mart_top_countries_by_sales</code> |
 
-### Example findings from the 2020–2023 snapshot
+## Business Analytics Query Results (Real Data Output)
 
-The following values are illustrative outputs from the current local source snapshot. <code>total_sales</code> and <code>total_profit</code> retain source units; the source currency and whether sales are gross or net have not been confirmed.
+These outputs are from the reconciled 2020–2023 source snapshot, not sample or generated data. The 15 baseline questions compare the Gold marts with the project’s recorded business definitions; the full question-by-question results and caveats are in [Business Analytics Query Results](docs/business-analytics-results.md) and [warehouse reconciliation evidence](reports/warehouse-reconciliation.md).
 
-| Segment | Sales | Profit | Profit margin |
+Amounts retain source units. The source currency and whether <code>sales</code> is gross or net have not been confirmed, so no currency symbol is shown. RFM values use the historical snapshot date <code>2024-01-01</code>.
+
+### Overall performance
+
+| Sales lines | Orders | Total sales | Total profit | Profit margin |
+|---:|---:|---:|---:|---:|
+| 51,290 | 25,728 | 6,517,674.00 | 1,065,413.58 | 16.35% |
+
+### Segment profitability
+
+| Segment | Sales lines | Orders | Total sales | Total profit | Profit margin |
+|---|---:|---:|---:|---:|---:|
+| Corporate | 15,429 | 7,724 | 3,840,707.00 | 608,523.36 | 15.84% |
+| Consumer | 26,518 | 13,291 | 2,146,780.00 | 365,377.50 | 17.02% |
+| Self-Employed | 9,343 | 4,713 | 530,187.00 | 91,512.72 | 17.26% |
+
+Corporate contributes the most sales and profit, while Self-Employed has the highest margin on the smallest sales base. Margin alone does not determine where to invest; product mix, discounting, and incremental contribution should be examined before changing commercial policy.
+
+### Discount and order-loss signal
+
+| Discount band | Sales lines | Loss-making line rate | Total profit |
 |---|---:|---:|---:|
-| Corporate | 3,840,707.00 | 608,523.36 | 15.8% |
-| Consumer | 2,146,780.00 | 365,377.50 | 17.0% |
-| Self-Employed | 530,187.00 | 91,512.72 | 17.3% |
-| **Overall** | **6,517,674.00** | **1,065,413.58** | **16.3%** |
+| 0% | 29,470 | 0.00% | 1,141,917.51 |
+| (0%, 20%] | 10,533 | 26.08% | 211,677.68 |
+| (20%, 40%] | 4,430 | 52.05% | -51,387.30 |
+| (40%, 60%] | 4,736 | 81.65% | -146,576.11 |
+| >60% | 2,121 | 100.00% | -90,218.20 |
 
-Discount analysis shows a pattern to investigate: the 0% and 0–20% bands have positive aggregate profit, while bands above 20% have negative aggregate profit in this snapshot. The share of loss-making sales lines also rises across higher discount bands. These are descriptive associations; they do not establish that discounts caused the losses.
+The higher-discount bands have negative aggregate profit and higher loss-line rates in this snapshot. This is an observational relationship, not evidence that discount caused the losses. An order is classified as loss-making only when the sum of its line profits is below zero.
 
-### Static chart samples
+### Customer and product highlights
 
-<p align="center">
-  <img src="docs/assets/charts/01_executive_overview.png" alt="Executive overview chart" width="32%">
-  <img src="docs/assets/charts/02_discount_profitability.png" alt="Discount profitability chart" width="32%">
-  <img src="docs/assets/charts/03_segment_profitability.png" alt="Segment profitability chart" width="32%">
-</p>
+| Analysis | Snapshot result | How to read it |
+|---|---|---|
+| VIP / inactivity risk | 3,483 VIP customers; at a 90-day threshold, 14,660 customers are flagged, including 2,732 VIPs. | Recency-based historical heuristic, not a churn label or current customer status. |
+| Best-selling product | P000116, 1,780 units and 67,640 total sales. | “Best-selling” means units sold; source product taxonomy is retained as provided. |
+| Basket associations | No product pair meets the default 0.5% support threshold; the most frequent pair appears in 3 orders. | Too sparse to support a cross-sell recommendation at the configured threshold. |
 
-The full set of ten generated charts is in [docs/assets/charts/](docs/assets/charts/). Rebuild them with the <code>charts</code> command below.
+## Executive Dashboards & Gold Visualizations
+
+The ten charts below are reproducible aggregate views of the Gold marts. Each visual answers a business question and links to the full-size PNG. Run <code>uv run --project . python scripts/project.py charts</code> after a successful ingestion and dbt build to regenerate them. For the source questions, metric definitions, and interpretation notes, see the [chart index](docs/assets/charts/README.md).
+
+<table>
+  <tr>
+    <td width="50%"><a href="docs/assets/charts/01_executive_overview.png"><img src="docs/assets/charts/01_executive_overview.png" alt="Executive overview: sales, profit, margin, orders, and customers" width="100%"></a><strong>1. Executive overview</strong><br>What are the headline sales, profit, margin, order, and customer measures?</td>
+    <td width="50%"><a href="docs/assets/charts/02_discount_profitability.png"><img src="docs/assets/charts/02_discount_profitability.png" alt="Discount profitability by discount band" width="100%"></a><strong>2. Discount profitability</strong><br>How do profit and loss-making line rates vary across discount bands?</td>
+  </tr>
+  <tr>
+    <td><a href="docs/assets/charts/03_segment_profitability.png"><img src="docs/assets/charts/03_segment_profitability.png" alt="Sales, profit, and margin by customer segment" width="100%"></a><strong>3. Segment profitability</strong><br>How do sales, profit, and margin compare by customer segment?</td>
+    <td><a href="docs/assets/charts/04_monthly_performance.png"><img src="docs/assets/charts/04_monthly_performance.png" alt="Monthly sales and profit trends with year-over-year comparison" width="100%"></a><strong>4. Monthly performance</strong><br>How do sales and profit change over time, and how does sales compare with the prior year?</td>
+  </tr>
+  <tr>
+    <td><a href="docs/assets/charts/05_category_mix_by_segment.png"><img src="docs/assets/charts/05_category_mix_by_segment.png" alt="Category sales mix within customer segments" width="100%"></a><strong>5. Category mix by segment</strong><br>How is each segment’s sales distributed among categories?</td>
+    <td><a href="docs/assets/charts/06_product_performance.png"><img src="docs/assets/charts/06_product_performance.png" alt="Leading products by units sold and profit" width="100%"></a><strong>6. Product performance</strong><br>Which products lead by units sold and by profit?</td>
+  </tr>
+  <tr>
+    <td><a href="docs/assets/charts/07_geography_performance.png"><img src="docs/assets/charts/07_geography_performance.png" alt="Market profitability and top countries by sales" width="100%"></a><strong>7. Geography performance</strong><br>How do markets compare on margin, and which countries lead by sales?</td>
+    <td><a href="docs/assets/charts/08_rfm_risk_sensitivity.png"><img src="docs/assets/charts/08_rfm_risk_sensitivity.png" alt="RFM inactivity-risk counts under three threshold assumptions" width="100%"></a><strong>8. RFM risk sensitivity</strong><br>How sensitive are inactivity-risk counts to 60-, 90-, and 180-day thresholds?</td>
+  </tr>
+  <tr>
+    <td><a href="docs/assets/charts/09_customer_region_behavior.png"><img src="docs/assets/charts/09_customer_region_behavior.png" alt="Customer behavior across matched sales regions" width="100%"></a><strong>9. Customer region behavior</strong><br>How many customers have sales across multiple matched regions?</td>
+    <td><a href="docs/assets/charts/10_customer_profile.png"><img src="docs/assets/charts/10_customer_profile.png" alt="Customer distribution by gender and occupation" width="100%"></a><strong>10. Customer profile</strong><br>How is the customer population distributed by gender and occupation?</td>
+  </tr>
+</table>
+
+These charts summarize the available snapshot; they do not establish causality. In particular, the discount and RFM charts should be read with the [data contract](docs/data-contract.md) and the caveats in the [business insights](docs/business-insights.md).
 
 ## Repository structure
 
@@ -140,17 +188,70 @@ Open <http://127.0.0.1:8765>. The UI listens locally; do not expose it to the pu
 
 For questions that need live model generation, configure <code>GEMINI_API_KEY</code> in the local root <code>.env</code>. <code>GEMINI_MODEL</code> can select the configured model. Offline guardrails and baseline checks do not require the key.
 
-## Text-to-SQL safety
+## Text-to-SQL (T2S) Natural Language Query Engine
 
-The model proposes SQL; application code decides whether that SQL may run.
+The T2S service lets an analyst ask questions in Vietnamese or English and receive a query result without writing SQL. It serves the already-built **Gold marts**; it does not ingest or transform data, and it runs separately from the Airflow refresh DAG. The design follows the reference project's component-by-component T2S walkthrough, with this project's semantic catalog, approved aggregate templates, SQLGlot policy boundary, and web result rendering documented explicitly. ([Reference repository](https://github.com/tunguyenn99/a-simple-t2s-flow))
 
-1. The question is matched against local routing and the semantic catalog supplies approved Gold marts and metric definitions.
-2. When needed, the configured Gemini model proposes a query.
-3. SQLGlot parses and validates the statement against the SQL dialect, allowed relations, and query policy.
-4. The executor accepts only a validated query and opens DuckDB read-only with configured row and execution limits.
-5. Results are returned as a bounded table; the UI can add KPI cards and an appropriate chart.
+### Request flow
 
-Destructive statements and relations outside the approved catalog are rejected before execution. Customer-level data access is restricted by policy and approved aggregate templates. Never place credentials, sensitive customer information, or raw source records in prompts.
+```mermaid
+flowchart TD
+    U["Analyst asks in Vietnamese or English"] --> Entry["CLI or local browser UI"]
+    Entry --> Checks{"Local input and policy checks"}
+    Checks -->|"Sensitive request, destructive intent"| Refuse["Refused; no model call and no SQL"]
+    Checks -->|"Ambiguous or unsupported time/metric"| Clarify["Clarification returned; no SQL"]
+    Checks -->|"Pass"| Context["Build context from semantic catalog and access policy"]
+    Context --> Gemini["Gemini returns structured decision JSON"]
+    Gemini --> Action{"action"}
+    Action -->|"clarify / refuse"| Response["Return status and explanation"]
+    Action -->|"sql"| Validator["SQLGlot AST validator"]
+    Action -->|"template"| Template["Check approved aggregate template ID"]
+    Template --> Validator
+    Validator -->|"Reject"| Block["Rejected; executor is not called"]
+    Validator -->|"ValidatedQuery"| Executor["Revalidate and execute read-only"]
+    Executor --> Gold[("DuckDB analytics_gold marts")]
+    Gold --> Result["Bounded QueryResult"]
+    Result --> Render{"Result shape"}
+    Render -->|"Always for answered query"| Table["CLI / browser result table"]
+    Render -->|"Single-row aggregate"| KPI["Browser KPI cards when eligible"]
+    Render -->|"2–60 rows with dimension + measure"| Chart["Deterministic bar or line chart"]
+```
+
+The model is a **query planner**, not a database client. Gemini receives the question and approved semantic metadata; the warehouse, query results, credentials, customer rows, and DuckDB file path remain local. The server-side service decides whether the model's decision can proceed.
+
+### What happens at each step
+
+| Step | Component | What it does |
+|---:|---|---|
+| 1 | Input interfaces — [`cli.py`](text2sql/cli.py), [`web_app.py`](text2sql/web_app.py) | Accept a bounded question in Vietnamese or English. The browser app runs locally and shows the returned status, answer, validated SQL when applicable, and result. |
+| 2 | Local router — [`nl_service.py`](text2sql/nl_service.py) | Checks length and screens for personal/customer-level requests, destructive intent, current-period requests outside the 2020–2023 snapshot, ambiguous profitability wording, and causal discount claims. It can refuse or ask for clarification before making an API call. |
+| 3 | Semantic context — [`catalog.py`](text2sql/catalog.py), [`semantic_catalog.yml`](text2sql/semantic_catalog.yml), [`access_policy.yml`](text2sql/access_policy.yml) | Supplies Gemini with approved Gold relations, grain, exposed columns, metric meanings, synonyms, caveats, language guidance, and limits. Context is built for the trusted local role; the role is never taken from the user prompt. |
+| 4 | Structured generation — [`gemini.py`](text2sql/gemini.py) | If local checks pass, asks the configured Gemini model for one structured decision: `sql`, `template`, `clarify`, or `refuse`. JSON schema, low temperature, and output limits constrain the response format. A missing key, quota/provider error, or invalid model response fails closed; no fallback query is executed. |
+| 5 | Restricted-data branch — [`service.py`](text2sql/service.py) | For the customer-level RFM and region marts, accepts only an approved template ID (Q08, Q13, or Q14). The SQL body stays in local policy, is checked for the trusted role, and must match the approved template exactly after normalization. |
+| 6 | SQL authorization — [`validator.py`](text2sql/validator.py) | Parses the SQL as DuckDB with SQLGlot and returns a `ValidatedQuery` only if it is exactly one `SELECT` over one fully qualified, allowlisted Gold mart. It checks AST node types, relation, column, function, output, and row-limit rules. |
+| 7 | Query execution — [`executor.py`](text2sql/executor.py) | Accepts only `ValidatedQuery`, validates it again, then opens DuckDB with `read_only=True`. External access and extension loading are disabled and configuration is locked. Policy sets a 10-second runtime, two threads, 1 GB memory and temp limits, and a 500-row hard cap. |
+| 8 | Result rendering — [`output.py`](text2sql/output.py), [`charting.py`](text2sql/charting.py), [`web_app.py`](text2sql/web_app.py) | Returns a bounded table. The browser can display KPI cards for eligible one-row results and suggests a line chart for date dimensions or a bar chart for other compatible results. Charts use only returned rows; they do not run SQL or calculate new aggregates. The CLI supports table/JSON output and non-overwriting CSV export. |
+
+### Policy boundary
+
+- Direct model-generated queries can read only approved aggregate/product-level marts in `analytics_gold`. Bronze, Silver, Intermediate, source tables, and unlisted relations are outside the serving allowlist.
+- Only one `SELECT` statement is accepted. Joins, CTEs, subqueries, `SELECT *`, table functions, external file/network access, unapproved columns/functions, and destructive statements are rejected before execution.
+- Customer-level RFM and region marts are restricted to their three approved aggregate templates. Customer identifiers and individual RFM values are not available to the general query role.
+- Demographic results must retain groups with at least 10 customers. The result row cap, runtime, memory, and thread limits are enforced separately by the validator and executor.
+- The local browser UI is single-user and has no authentication. Keep it on localhost; a shared deployment needs identity, authorization, and process/container isolation before it is exposed to other users.
+
+### What users see
+
+| Service status | Meaning |
+|---|---|
+| `answered` | The validated query ran and a bounded result is available. |
+| `clarify` | The time period, metric, or supported interpretation needs clarification; no query ran. |
+| `refused` | The request conflicts with the access or read-only policy; no query ran. |
+| `rejected` | The model's SQL or template did not satisfy the current catalog/policy; no query ran. |
+| `unavailable` | Gemini is unconfigured, unavailable, or returned an unusable decision; no SQL ran. |
+| `failed` | A validated query or approved template could not be executed by the warehouse. |
+
+The browser's query-result chart is different from the ten static Gold charts above: static charts are generated from predefined marts, while T2S charts visualize only the rows returned for the current question. See the [Text-to-SQL module guide](text2sql/README.md) and [evaluation guide](text2sql/evaluation/README.md) for setup, guardrail cases, and baseline commands.
 
 ## Optional Airflow / Cosmos workflow
 

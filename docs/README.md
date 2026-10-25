@@ -12,6 +12,7 @@ This folder contains current architecture, setup, operating, analytical, and dec
 | [Demo walkthrough](demo.md) | A concise path from source data to marts, charts, and Text-to-SQL answers. |
 | [Data contract](data-contract.md) | Source tables/grain, metric definitions, data quality, and assumptions. |
 | [Business insights](business-insights.md) | Snapshot findings, decision questions, and interpretation limits. |
+| [Business Analytics Query Results](business-analytics-results.md) | The 15 reconciled business questions, observed outputs, and metric caveats. |
 | [Decision records](decisions/README.md) | Repository boundaries and shared DuckDB access decisions. |
 | [Visual assets](assets/README.md) | Architecture diagram and chart inventory. |
 

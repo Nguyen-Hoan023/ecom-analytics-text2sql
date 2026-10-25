@@ -4,9 +4,9 @@ This package turns English or Vietnamese business questions into bounded queries
 
 ## Request lifecycle
 
-Question → local clarification/policy checks → semantic catalog context → optional Gemini proposal → SQLGlot validation → read-only DuckDB executor → bounded result.
+Question → local checks → semantic catalog and policy context → Gemini structured decision → direct-SQL or approved-template path → SQLGlot validation → read-only DuckDB executor → bounded result → CLI/browser rendering.
 
-The model output is untrusted until the application validates it. The executor accepts a <code>ValidatedQuery</code>, not raw SQL.
+Local checks can refuse a sensitive or destructive request or ask for clarification before an API call. If the request passes, Gemini must be configured; a missing key, provider/quota error, or invalid decision returns <code>unavailable</code> and does not execute SQL. The model output is untrusted until the application validates it. The executor accepts a <code>ValidatedQuery</code>, not raw SQL. The [main README's T2S section](../README.md) contains the request-flow diagram and step-by-step explanation.
 
 ## Responsibilities
 
