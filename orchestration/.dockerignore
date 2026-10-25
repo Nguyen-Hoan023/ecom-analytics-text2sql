@@ -1,0 +1,13 @@
+astro
+.git
+.env
+**/.env
+airflow_settings.yaml
+logs/
+.venv
+airflow.db
+airflow.cfg
+**/*.duckdb
+**/*.duckdb.wal
+**/target/
+**/dbt_packages/

@@ -40,6 +40,7 @@ SQL Server → DLT → DuckDB Bronze → dbt Silver → Intermediate → Gold
 - Các mart ban đầu đã được chạy riêng và kết quả được xem lại bằng dbt show.
 - Cấu hình mẫu `models.ecom_analytics.example` đã được gỡ khỏi `dbt_project.yml`; `dbt parse` chạy sạch.
 - Full `dbt build` chạy thành công; toàn bộ model và test trong DAG đã pass.
+- Kết quả đối chiếu Q1–Q15 theo output đã chia sẻ được ghi cùng ngoại lệ và phạm vi diễn giải trong [checkpoint Q1–Q15](checkpoint-q1-q15-reconciliation.md); SQL ad-hoc chưa được lưu thành bộ audit tái chạy.
 
 ## Kết quả Q15 — Market basket
 

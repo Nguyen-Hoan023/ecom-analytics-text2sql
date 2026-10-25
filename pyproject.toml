@@ -9,6 +9,13 @@ dependencies = [
     "dbt-duckdb>=1.9,<2.0",
     "pymssql>=2.3,<3.0",
     "python-dotenv>=1.0,<2.0",
+    "duckdb>=1.4,<2.0",
+    "matplotlib>=3.11.2",
+    "pandas>=2.2,<4.0",
+    "seaborn>=0.13.2",
+    "pyyaml>=6.0,<7.0",
+    "sqlglot>=30.22,<31.0",
+    "google-genai>=2.28,<3.0",
 ]
 
 [tool.uv]

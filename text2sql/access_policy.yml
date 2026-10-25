@@ -1,0 +1,226 @@
+policy_version: 1
+status: gemini_adapter_and_nl_service_implemented
+dialect: duckdb
+
+purpose: >
+  Application-side authorization contract for Text-to-SQL. DuckDB is embedded
+  and does not provide an internal untrusted-user privilege boundary; these
+  rules must be enforced before execution and supplemented by process isolation
+  before serving untrusted or remote users.
+
+identity:
+  initial_mode: local_single_user
+  default_role: local_analyst
+  role_source: "Trusted application configuration or authenticated identity; never infer role from the natural-language prompt."
+  authentication_required_before_shared_deployment: true
+
+data_access:
+  allowed_schema: analytics_gold
+  allowed_relations:
+    - analytics_gold.mart_sales_by_segment
+    - analytics_gold.mart_monthly_sales
+    - analytics_gold.mart_product_performance
+    - analytics_gold.mart_customer_profile_by_gender_occupation
+    - analytics_gold.mart_discount_profitability
+    - analytics_gold.mart_loss_making_orders_by_segment
+    - analytics_gold.mart_profitability_by_market
+    - analytics_gold.mart_top_countries_by_sales
+    - analytics_gold.mart_category_sales_mix_by_segment
+    - analytics_gold.mart_market_basket_associations
+  denied_layers:
+    - bronze
+    - analytics_silver
+    - analytics_intermediate
+    - source_tables
+  restricted_relations:
+    analytics_gold.mart_customer_region_behavior:
+      access: approved_aggregate_template_only
+      permitted_template_ids: [q13_region_behavior_summary]
+      forbidden_output_columns: [customer_id]
+    analytics_gold.mart_customer_rfm:
+      access: approved_aggregate_template_only
+      permitted_template_ids: [q08_vip_risk_summary, q14_rfm_population_summary]
+      forbidden_output_columns: [customer_id, monetary_sales, last_order_date, recency_days, frequency_orders, recency_score, frequency_score, monetary_score]
+  never_send_to_model:
+    - customer_id
+    - first_name
+    - last_name
+    - email_address
+    - birth_date
+    - annual_income
+    - SQL Server credentials
+    - DuckDB file path or secrets
+    - raw customer-level rows
+
+roles:
+  local_analyst:
+    allowed_relations_ref: data_access.allowed_relations
+    restricted_relations_ref: data_access.restricted_relations
+    restricted_access_mode: listed_aggregate_templates_only
+    result_mode: aggregate_or_product_level
+    max_result_rows: 500
+    default_result_rows: 50
+    demographic_min_group_size: 10
+    customer_level_output: deny
+    arbitrary_sql_on_customer_level_relations: deny
+
+sql_validation:
+  allowed_root_statement: SELECT
+  allow_single_statement_only: true
+  allow_ctes: false
+  allow_joins: false
+  allow_select_star: false
+  allow_table_functions: false
+  allow_external_file_or_network_access: false
+  allow_user_defined_or_extension_functions: false
+  require_every_base_relation_in_allowlist: true
+  require_every_column_in_catalog: true
+  enforce_model_query_mode: true
+  reject_on_parse_or_validation_error: true
+  fallback_on_error: none
+  allowed_functions:
+    - ABS
+    - AVG
+    - CAST
+    - COALESCE
+    - COUNT
+    - DATE_PART
+    - DATE_TRUNC
+    - EXTRACT
+    - LOWER
+    - MAX
+    - MIN
+    - MONTH
+    - NULLIF
+    - ROUND
+    - SUM
+    - UPPER
+    - YEAR
+  demographic_minimum_group_size:
+    relation: analytics_gold.mart_customer_profile_by_gender_occupation
+    count_column: customer_count
+    required_predicate: ">="
+    require_simple_row_selection: true
+  forbidden_statement_families:
+    - insert
+    - update
+    - delete
+    - merge
+    - create
+    - alter
+    - drop
+    - attach
+    - detach
+    - copy
+    - export
+    - install
+    - load
+    - pragma
+    - set
+    - call
+  forbidden_capabilities:
+    - read_local_files
+    - write_local_files
+    - read_remote_files
+    - network_access
+    - load_extensions
+    - change_database_configuration
+    - access_secrets
+    - return_customer_identifiers
+  notes:
+    - "Use SQLGlot AST inspection; keyword deny-lists and formatting alone are not authorization."
+    - "If the SQL parser errors or finds an unknown construct, fail closed and ask for a clearer question; never execute the original unparsed SQL."
+    - "Prepared parameters protect values only when the SQL structure is already controlled; they do not make arbitrary model-generated SQL safe."
+
+duckdb_execution:
+  open_database_read_only: true
+  disable_external_access: true
+  disable_extension_autoload: true
+  disable_extension_autoinstall: true
+  disable_community_extensions: true
+  lock_security_configuration_after_setup: true
+  max_query_runtime_seconds: 10
+  max_threads: 2
+  memory_limit: 1GB
+  max_temp_directory_size: 1GB
+  output_rows_hard_cap: 500
+  deployment_requirement: "For remote or untrusted users, execute in a separate low-privilege process/container with restricted filesystem access, network isolation, resource limits, and an application-enforced timeout."
+
+logging:
+  record:
+    - request_id
+    - timestamp
+    - trusted_role
+    - normalized_question_redacted
+    - selected_model_names
+    - catalog_version
+    - validated_sql
+    - execution_duration
+    - returned_row_count
+    - rejection_reason
+  redact_or_omit:
+    - API_keys
+    - database_credentials
+    - customer_identifiers
+    - raw_customer_level_results
+  retention_days: 30
+
+approved_aggregate_templates:
+  q08_vip_risk_summary:
+    relation: analytics_gold.mart_customer_rfm
+    output_columns: [snapshot_date, customer_count, scored_customers, vip_customers, customers_at_risk_90d, vip_customers_at_risk_90d]
+    sql: |
+      SELECT
+          snapshot_date,
+          COUNT(*) AS customer_count,
+          SUM(CASE WHEN rfm_status = 'scored' THEN 1 ELSE 0 END) AS scored_customers,
+          SUM(CASE WHEN is_vip THEN 1 ELSE 0 END) AS vip_customers,
+          SUM(CASE WHEN churn_risk_90d THEN 1 ELSE 0 END) AS customers_at_risk_90d,
+          SUM(CASE WHEN vip_churn_risk THEN 1 ELSE 0 END) AS vip_customers_at_risk_90d
+      FROM analytics_gold.mart_customer_rfm
+      GROUP BY snapshot_date
+    permitted_result: "Counts of customers, VIPs, customers with churn_risk_90d, and VIPs with vip_churn_risk by snapshot/approved threshold."
+    forbidden_result: "Customer identifiers or individual monetary/recency/frequency scores."
+  q13_region_behavior_summary:
+    relation: analytics_gold.mart_customer_region_behavior
+    output_columns: [customer_population, multi_region_customers, customers_with_orphan_region, max_matched_regions, orphan_region_lines, orphan_region_sales, orphan_region_profit]
+    sql: |
+      SELECT
+          COUNT(*) AS customer_population,
+          SUM(CASE WHEN is_multi_region_customer THEN 1 ELSE 0 END) AS multi_region_customers,
+          SUM(CASE WHEN has_orphan_region_activity THEN 1 ELSE 0 END) AS customers_with_orphan_region,
+          MAX(matched_region_count) AS max_matched_regions,
+          SUM(orphan_region_sales_line_count) AS orphan_region_lines,
+          SUM(orphan_region_sales) AS orphan_region_sales,
+          SUM(orphan_region_profit) AS orphan_region_profit
+      FROM analytics_gold.mart_customer_region_behavior
+    permitted_result: "Population counts, multi-region customer counts, orphan-region row counts and aggregate sales/profit reconciliation."
+    forbidden_result: "Customer identifiers or individual customer-level sales/profit."
+  q14_rfm_population_summary:
+    relation: analytics_gold.mart_customer_rfm
+    output_columns: [snapshot_date, customer_population, scored_customers, no_purchase_customers, recency_score_1_customers, recency_score_2_customers, recency_score_3_customers, recency_score_4_customers, recency_score_5_customers, frequency_score_1_customers, frequency_score_2_customers, frequency_score_3_customers, frequency_score_4_customers, frequency_score_5_customers, monetary_score_1_customers, monetary_score_2_customers, monetary_score_3_customers, monetary_score_4_customers, monetary_score_5_customers]
+    sql: |
+      SELECT
+          snapshot_date,
+          COUNT(*) AS customer_population,
+          SUM(CASE WHEN rfm_status = 'scored' THEN 1 ELSE 0 END) AS scored_customers,
+          SUM(CASE WHEN rfm_status = 'no_purchase_history' THEN 1 ELSE 0 END) AS no_purchase_customers,
+          SUM(CASE WHEN recency_score = 1 THEN 1 ELSE 0 END) AS recency_score_1_customers,
+          SUM(CASE WHEN recency_score = 2 THEN 1 ELSE 0 END) AS recency_score_2_customers,
+          SUM(CASE WHEN recency_score = 3 THEN 1 ELSE 0 END) AS recency_score_3_customers,
+          SUM(CASE WHEN recency_score = 4 THEN 1 ELSE 0 END) AS recency_score_4_customers,
+          SUM(CASE WHEN recency_score = 5 THEN 1 ELSE 0 END) AS recency_score_5_customers,
+          SUM(CASE WHEN frequency_score = 1 THEN 1 ELSE 0 END) AS frequency_score_1_customers,
+          SUM(CASE WHEN frequency_score = 2 THEN 1 ELSE 0 END) AS frequency_score_2_customers,
+          SUM(CASE WHEN frequency_score = 3 THEN 1 ELSE 0 END) AS frequency_score_3_customers,
+          SUM(CASE WHEN frequency_score = 4 THEN 1 ELSE 0 END) AS frequency_score_4_customers,
+          SUM(CASE WHEN frequency_score = 5 THEN 1 ELSE 0 END) AS frequency_score_5_customers,
+          SUM(CASE WHEN monetary_score = 1 THEN 1 ELSE 0 END) AS monetary_score_1_customers,
+          SUM(CASE WHEN monetary_score = 2 THEN 1 ELSE 0 END) AS monetary_score_2_customers,
+          SUM(CASE WHEN monetary_score = 3 THEN 1 ELSE 0 END) AS monetary_score_3_customers,
+          SUM(CASE WHEN monetary_score = 4 THEN 1 ELSE 0 END) AS monetary_score_4_customers,
+          SUM(CASE WHEN monetary_score = 5 THEN 1 ELSE 0 END) AS monetary_score_5_customers
+      FROM analytics_gold.mart_customer_rfm
+      GROUP BY snapshot_date
+    permitted_result: "Population, snapshot date, score/status mismatch or aggregate score distribution."
+    forbidden_result: "Customer identifiers or individual monetary/recency/frequency scores."

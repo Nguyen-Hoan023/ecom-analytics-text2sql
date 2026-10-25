@@ -14,6 +14,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+.cache/
 
 # Local warehouse files and temporary database artifacts
 *.duckdb
@@ -24,11 +25,12 @@ __pycache__/
 
 # Generated dbt/Airflow artifacts and logs
 target/
-dbt_model/target/
-dbt_model/logs/
 logs/
 airflow.db
 airflow.cfg
+
+# Local exports from ad-hoc analysis; sanitized evaluation reports remain tracked
+/reports/exports/
 
 # Editor / OS noise
 .idea/

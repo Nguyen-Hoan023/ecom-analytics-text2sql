@@ -1,0 +1,378 @@
+catalog_version: 1
+status: gemini_adapter_and_nl_service_implemented
+dialect: duckdb
+gold_schema: analytics_gold
+
+dataset:
+  name: Xom E-Com
+  data_start: "2020-01-01"
+  data_end: "2023-12-31"
+  rfm_snapshot_date: "2024-01-01"
+  notes:
+    - "This is a historical snapshot, not a real-time feed."
+    - "The source does not confirm the currency or whether sales is gross or net."
+    - "Product category and subcategory labels have known inconsistencies; preserve source labels."
+    - "Unmatched product/region facts are retained under Unknown for reconciliation."
+
+language:
+  supported: [vi, en]
+  unknown_value_meaning: "Unknown means missing, blank, or unmatched, depending on the dimension; it is not a business segment or geography."
+  clarify_before_generation:
+    - "The user says best-selling but does not say units sold or sales value. Default to units_sold and disclose this definition."
+    - "The user says revenue; map to total_sales but disclose that source gross/net semantics and currency are unconfirmed."
+    - "The requested time range is outside 2020-01-01 through 2023-12-31, or 'last year/current' is ambiguous against this historical snapshot."
+    - "The user says most profitable without specifying total profit or profit margin. Ask which ranking they want."
+    - "The request implies causal impact from descriptive discount or segment comparisons. Explain that the marts do not establish causality."
+
+metrics:
+  sales_line_count:
+    synonyms: [sales lines, transaction lines, dòng giao dịch, dòng bán hàng]
+    meaning: "Count of fact rows; source grain is one row per row_id."
+    aggregation: "Sum sales_line_count only across a partition known to cover disjoint fact rows."
+  order_count:
+    synonyms: [orders, distinct orders, số đơn, số đơn hàng]
+    meaning: "Distinct order_id within the mart row's grouping."
+    aggregation: "Non-additive across groups unless the grouping is known to partition orders; never sum across product/category/geography groups by default. In this snapshot, monthly and segment order-count rollups reconcile to 25,728 distinct source orders."
+  total_sales:
+    synonyms: [sales, revenue, doanh thu, tổng sales]
+    meaning: "SUM(source sales), at the source transaction-line grain. Do not multiply by quantity."
+    caveat: "Revenue is a search synonym only. Source gross/net semantics and currency are unconfirmed; present as total_sales in source units."
+    aggregation: "Additive across disjoint transaction rows."
+  total_profit:
+    synonyms: [profit, lợi nhuận, tổng profit]
+    meaning: "SUM(source profit), retaining negative values."
+    aggregation: "Additive across disjoint transaction rows."
+  profit_margin:
+    synonyms: [margin, profit margin, tỷ suất lợi nhuận, biên lợi nhuận]
+    meaning: "SUM(total_profit) / NULLIF(SUM(total_sales), 0)."
+    aggregation: "Non-additive. Recompute from summed profit and sales; never average group margins."
+  units_sold:
+    synonyms: [units sold, quantity sold, số lượng bán, sản phẩm bán ra]
+    meaning: "SUM(quantity). This is the v1 meaning of best-selling."
+    aggregation: "Additive across disjoint product transaction rows."
+  average_discount:
+    synonyms: [average discount, avg discount, discount trung bình, mức giảm giá trung bình]
+    meaning: "AVG(source discount) by transaction line; zero-discount lines are included. Source stores a 0–1 fraction (0.20 means 20%)."
+    aggregation: "Non-additive. When rolling up mart_discount_profitability across discount bands, calculate SUM(avg_discount * sales_line_count) / SUM(sales_line_count); do not average avg_discount values."
+  loss_making_line_rate:
+    synonyms: [loss line rate, tỷ lệ dòng lỗ]
+    meaning: "Loss-making lines divided by sales lines; a line is loss-making when profit < 0."
+    aggregation: "Non-additive. Recompute as SUM(loss_making_line_count) / SUM(sales_line_count)."
+  loss_making_order_rate:
+    synonyms: [loss order rate, tỷ lệ đơn lỗ]
+    meaning: "Orders with summed order profit < 0 divided by distinct orders."
+    aggregation: "Non-additive. Recompute as SUM(loss_making_order_count) / SUM(order_count) only for a known disjoint order partition."
+  sales_share_of_segment:
+    synonyms: [category sales share, sales mix, tỷ trọng sales, cơ cấu doanh số]
+    meaning: "Category total_sales divided by total sales for that segment. This is category mix, not product co-purchase or causal cross-sell."
+    aggregation: "Non-additive. Recompute from category sales and segment sales; do not average shares."
+  rfm_vip:
+    synonyms: [VIP, khách hàng giá trị cao]
+    meaning: "is_vip is true when monetary_score = 5, the highest Monetary quintile in this snapshot."
+    caveat: "A relative quintile, not a fixed spend threshold."
+  rfm_churn_risk:
+    synonyms: [churn risk, at risk, nguy cơ rời bỏ, có nguy cơ churn]
+    meaning: "churn_risk_90d is true when recency_days >= 90 at the 2024-01-01 snapshot. vip_churn_risk is the intersection with is_vip."
+    caveat: "Historical inactivity heuristic, not an observed churn label and not current customer status."
+  basket_support:
+    synonyms: [support, order-pair support, độ phổ biến cặp sản phẩm]
+    meaning: "Orders containing both products divided by valid orders after deduplicating (order_id, product_code)."
+    caveat: "The mart default threshold is 0.5%; the current snapshot has no qualifying pair at 0.05% or higher. Do not claim SKU cross-sell evidence from the 0.01% sensitivity output."
+  customer_count:
+    synonyms: [customer count, số khách hàng]
+    meaning: "Number of customers in one gender-by-occupation group."
+    aggregation: "Add only across mutually exclusive gender-by-occupation groups; apply the configured minimum group size."
+  sales_yoy_growth_rate:
+    synonyms: [year-over-year sales growth, YoY sales growth, tăng trưởng sales cùng kỳ]
+    meaning: "(total_sales - prior_year_sales) / prior_year_sales for the matching calendar month one year earlier."
+    caveat: "Unavailable for the first 12 months because the source snapshot has no prior-year comparison."
+    aggregation: "Non-additive; do not average monthly growth rates to calculate an overall rate."
+  customer_population:
+    synonyms: [customer population, customer base, tổng số khách trong snapshot]
+    meaning: "Count of customer rows in the approved aggregate snapshot; one row per customer."
+    aggregation: "A snapshot-level population count. Do not sum across repeated snapshots."
+  scored_customers:
+    synonyms: [scored customers, khách được chấm điểm RFM]
+    meaning: "Customers with rfm_status = scored in the snapshot."
+  no_purchase_customers:
+    synonyms: [no purchase history customers, khách chưa có lịch sử mua]
+    meaning: "Customers with rfm_status = no_purchase_history in the snapshot."
+  customers_at_risk_90d:
+    synonyms: [customers inactive 90 days, khách không mua 90 ngày]
+    meaning: "Customers with churn_risk_90d = true at the configured RFM snapshot."
+    caveat: "Historical inactivity heuristic, not a current churn label."
+  vip_customers_at_risk_90d:
+    synonyms: [VIP customers at risk, VIP có nguy cơ churn]
+    meaning: "VIP customers who also satisfy the 90-day inactivity heuristic at the configured RFM snapshot."
+    caveat: "Historical snapshot intersection, not a current churn label."
+  multi_region_customers:
+    synonyms: [multi-region customers, khách mua nhiều region]
+    meaning: "Customers with sales in more than one region that matched the region dimension."
+    caveat: "Does not include orphan region keys as matched regions."
+  customers_with_orphan_region:
+    synonyms: [customers with unmatched region activity, khách có giao dịch region không khớp]
+    meaning: "Customers with at least one sales row whose region key did not match the region dimension."
+  max_matched_regions:
+    synonyms: [maximum matched regions per customer, số region khớp tối đa]
+    meaning: "Maximum matched-region count across the customer population in the aggregate snapshot."
+  orphan_region_lines:
+    synonyms: [orphan region lines, unmatched region transaction lines, dòng giao dịch region không khớp]
+    meaning: "Count of transaction lines whose region key did not match the region dimension."
+  orphan_region_sales:
+    synonyms: [orphan region sales, sales on unmatched region lines]
+    meaning: "Sum of source sales for transaction lines whose region key did not match the region dimension."
+  orphan_region_profit:
+    synonyms: [orphan region profit, profit on unmatched region lines]
+    meaning: "Sum of source profit for transaction lines whose region key did not match the region dimension."
+  rfm_score_distribution:
+    synonyms: [RFM score distribution, phân bố điểm RFM]
+    meaning: "Aggregate customer counts at each Recency, Frequency, and Monetary score from 1 to 5, plus scored and no-purchase-history counts."
+    caveat: "Historical snapshot distribution only; scores are not individual customer lifecycle labels."
+
+models:
+  - name: mart_sales_by_segment
+    relation: analytics_gold.mart_sales_by_segment
+    description: "Sales and profit by source transaction segment."
+    grain: "One row per segment."
+    access_class: aggregate
+    query_mode: direct_select
+    dimensions: [segment]
+    caveats: ["Segment is sourced from ecom_sales, not a permanent customer attribute."]
+    columns:
+      - {name: segment, type: string, meaning: "Source segment; null is represented as Unknown."}
+      - {name: sales_line_count, type: integer, meaning: "Count of transaction rows in segment."}
+      - {name: order_count, type: integer, meaning: "Distinct orders within segment; this dataset was checked for orders spanning multiple segments."}
+      - {name: total_sales, type: decimal, meaning: "Sum of source sales, not confirmed gross/net revenue."}
+      - {name: total_profit, type: decimal, meaning: "Sum of source profit, including losses."}
+      - {name: profit_margin, type: decimal, meaning: "Total profit divided by total sales."}
+
+  - name: mart_monthly_sales
+    relation: analytics_gold.mart_monthly_sales
+    description: "Monthly sales, profit, margin and year-over-year sales."
+    grain: "One row per calendar month."
+    access_class: aggregate
+    query_mode: direct_select
+    dimensions: [sales_month]
+    caveats: ["48 months from 2020-01 through 2023-12; first-year prior_year_sales and YoY may be null."]
+    columns:
+      - {name: sales_month, type: date, meaning: "First day of the calendar month."}
+      - {name: sales_line_count, type: integer, meaning: "Transaction rows in month."}
+      - {name: order_count, type: integer, meaning: "Distinct orders in month; do not sum across arbitrary groupings."}
+      - {name: total_sales, type: decimal, meaning: "Sum of source sales in month."}
+      - {name: total_profit, type: decimal, meaning: "Sum of source profit in month."}
+      - {name: profit_margin, type: decimal, meaning: "Monthly total profit divided by monthly total sales."}
+      - {name: prior_year_sales, type: decimal, meaning: "Sales in the same calendar month one year earlier; null when unavailable."}
+      - {name: sales_yoy_growth_rate, type: decimal, meaning: "total_sales / prior_year_sales - 1; null if prior-year sales is unavailable or zero."}
+
+  - name: mart_product_performance
+    relation: analytics_gold.mart_product_performance
+    description: "Sales and profit aggregated by product code."
+    grain: "One row per product_code observed in transactions."
+    access_class: product_aggregate
+    query_mode: direct_select
+    dimensions: [product_code, product_name, category, subcategory]
+    caveats:
+      - "Category/subcategory labels are source labels and have known taxonomy inconsistencies."
+      - "Unknown products are retained for reconciliation; category_profit_rank is null for Unknown."
+      - "units_sold_rank is global; category_profit_rank is within category."
+    columns:
+      - {name: product_code, type: string, meaning: "Source product key, including unmatched codes."}
+      - {name: product_name, type: string, meaning: "Source product name or Unknown product."}
+      - {name: category, type: string, meaning: "Source category or Unknown; taxonomy is not normalized."}
+      - {name: subcategory, type: string, meaning: "Source subcategory or Unknown; taxonomy is not normalized."}
+      - {name: sales_line_count, type: integer, meaning: "Transaction rows for product."}
+      - {name: order_count, type: integer, meaning: "Distinct orders containing product; non-additive across products."}
+      - {name: units_sold, type: integer, meaning: "Sum of quantity."}
+      - {name: total_sales, type: decimal, meaning: "Sum of source sales."}
+      - {name: total_profit, type: decimal, meaning: "Sum of source profit."}
+      - {name: profit_margin, type: decimal, meaning: "Product total profit divided by product total sales."}
+      - {name: units_sold_rank, type: integer, meaning: "Global rank by units sold, ties broken by product_code."}
+      - {name: category_profit_rank, type: integer, meaning: "Rank by total profit within category; null for Unknown category."}
+
+  - name: mart_customer_profile_by_gender_occupation
+    relation: analytics_gold.mart_customer_profile_by_gender_occupation
+    description: "Customer counts by gender and occupation; no customer-level identifiers."
+    grain: "One row per gender and occupation combination."
+    access_class: aggregate
+    query_mode: direct_select
+    dimensions: [gender, occupation]
+    caveats: ["Unknown groups are retained; apply the minimum group-size rule in access_policy.yml when serving results."]
+    columns:
+      - {name: gender, type: string, meaning: "Source gender; null is represented as Unknown."}
+      - {name: occupation, type: string, meaning: "Source occupation; null is represented as Unknown."}
+      - {name: customer_count, type: integer, meaning: "Distinct customers in the gender-occupation cell."}
+
+  - name: mart_discount_profitability
+    relation: analytics_gold.mart_discount_profitability
+    description: "Profitability and loss-line rate by product category and discount band."
+    grain: "One row per category and discount_band."
+    access_class: aggregate
+    query_mode: direct_select
+    dimensions: [category, discount_band]
+    caveats:
+      - "Discount bands are 0%, (0-20%], (20-40%], (40-60%], >60%, and Unknown."
+      - "loss_making_line_rate is at transaction-line grain, not order grain."
+      - "Descriptive association does not establish that discounts caused losses."
+      - "Category labels inherit source taxonomy inconsistencies."
+    columns:
+      - {name: category, type: string, meaning: "Source product category or Unknown."}
+      - {name: discount_band, type: string, meaning: "Configured discount interval; source discount is a 0-1 fraction."}
+      - {name: sales_line_count, type: integer, meaning: "Transaction rows in category and discount band."}
+      - {name: orders_with_sales_lines, type: integer, meaning: "Distinct orders with rows in the group; non-additive across groups."}
+      - {name: avg_discount, type: decimal, meaning: "Unweighted average discount per transaction line within the group."}
+      - {name: total_sales, type: decimal, meaning: "Sum of source sales."}
+      - {name: total_profit, type: decimal, meaning: "Sum of source profit."}
+      - {name: profit_margin, type: decimal, meaning: "Group total profit divided by group total sales."}
+      - {name: loss_making_line_count, type: integer, meaning: "Rows with profit < 0."}
+      - {name: loss_making_line_rate, type: decimal, meaning: "Loss-making lines divided by sales_line_count."}
+
+  - name: mart_loss_making_orders_by_segment
+    relation: analytics_gold.mart_loss_making_orders_by_segment
+    description: "Order-level loss counts and rates by source segment."
+    grain: "One row per segment."
+    access_class: aggregate
+    query_mode: direct_select
+    dimensions: [segment]
+    caveats: ["An order is loss-making only when the sum of its line profits is below zero."]
+    columns:
+      - {name: segment, type: string, meaning: "Source segment or Unknown."}
+      - {name: order_count, type: integer, meaning: "Distinct orders in segment."}
+      - {name: loss_making_order_count, type: integer, meaning: "Orders whose summed line profit is negative."}
+      - {name: loss_making_order_rate, type: decimal, meaning: "Loss-making orders divided by order_count."}
+
+  - name: mart_profitability_by_market
+    relation: analytics_gold.mart_profitability_by_market
+    description: "Sales and profitability by source market, including Unknown."
+    grain: "One row per market."
+    access_class: aggregate
+    query_mode: direct_select
+    dimensions: [market]
+    caveats: ["Unknown retains transactions with unmatched region; market labels are source labels."]
+    columns:
+      - {name: market, type: string, meaning: "Source market or Unknown."}
+      - {name: sales_line_count, type: integer, meaning: "Transaction rows in market."}
+      - {name: order_count, type: integer, meaning: "Distinct orders touching market; not additive across markets by default."}
+      - {name: total_sales, type: decimal, meaning: "Sum of source sales."}
+      - {name: total_profit, type: decimal, meaning: "Sum of source profit."}
+      - {name: profit_margin, type: decimal, meaning: "Total profit divided by total sales."}
+
+  - name: mart_top_countries_by_sales
+    relation: analytics_gold.mart_top_countries_by_sales
+    description: "Top 15 identified countries ranked by sales, plus an Unknown reconciliation row."
+    grain: "One row per returned country or Unknown."
+    access_class: aggregate
+    query_mode: direct_select
+    dimensions: [country]
+    caveats:
+      - "This model contains only the top 15 identified countries plus Unknown, not the full country population."
+      - "Unknown has no sales_rank and must not be presented as a named country."
+      - "Country labels are source labels; do not normalize them without a verified mapping."
+    columns:
+      - {name: country, type: string, meaning: "Source country or Unknown."}
+      - {name: sales_line_count, type: integer, meaning: "Transaction rows in country."}
+      - {name: order_count, type: integer, meaning: "Distinct orders in country; non-additive across countries by default."}
+      - {name: total_sales, type: decimal, meaning: "Sum of source sales."}
+      - {name: total_profit, type: decimal, meaning: "Sum of source profit."}
+      - {name: profit_margin, type: decimal, meaning: "Total profit divided by total sales."}
+      - {name: sales_rank, type: integer, meaning: "Rank by sales among identified top-15 countries; null for Unknown."}
+
+  - name: mart_category_sales_mix_by_segment
+    relation: analytics_gold.mart_category_sales_mix_by_segment
+    description: "Category-level sales mix within each customer segment."
+    grain: "One row per segment and category."
+    access_class: aggregate
+    query_mode: direct_select
+    dimensions: [segment, category]
+    caveats:
+      - "This is category mix, not evidence that products were bought together or that cross-sell caused sales."
+      - "sales_share_of_segment is computed over all categories in that segment, including Unknown where present."
+      - "Category labels inherit source taxonomy inconsistencies."
+    columns:
+      - {name: segment, type: string, meaning: "Source transaction segment or Unknown."}
+      - {name: category, type: string, meaning: "Source product category or Unknown."}
+      - {name: sales_line_count, type: integer, meaning: "Transaction rows in segment-category."}
+      - {name: order_count, type: integer, meaning: "Distinct orders touching the segment-category; non-additive across categories."}
+      - {name: total_sales, type: decimal, meaning: "Sum of source sales in segment-category."}
+      - {name: total_profit, type: decimal, meaning: "Sum of source profit in segment-category."}
+      - {name: segment_total_sales, type: decimal, meaning: "Total segment sales repeated for each category row."}
+      - {name: sales_share_of_segment, type: decimal, meaning: "total_sales divided by segment_total_sales."}
+
+  - name: mart_market_basket_associations
+    relation: analytics_gold.mart_market_basket_associations
+    description: "Directed product association rules from deduplicated order-product pairs."
+    grain: "One row per directed antecedent-product to consequent-product rule meeting the configured support threshold."
+    access_class: aggregate
+    query_mode: direct_select
+    dimensions: [antecedent_product_code, consequent_product_code]
+    caveats:
+      - "The basket deduplicates each (order_id, product_code) pair."
+      - "Default minimum support is 0.5%; the current mart is empty at this threshold."
+      - "The observed maximum pair count is 3 orders; 0.01% sensitivity pairs are exploratory only, not evidence for a recommendation."
+      - "Product codes are preserved when unmatched; match_status identifies those rows."
+    columns:
+      - {name: antecedent_product_code, type: string, meaning: "Source code for the antecedent product."}
+      - {name: antecedent_product_name, type: string, meaning: "Matched product name or Unknown product."}
+      - {name: antecedent_match_status, type: string, meaning: "matched or unmatched against product dimension."}
+      - {name: consequent_product_code, type: string, meaning: "Source code for the consequent product."}
+      - {name: consequent_product_name, type: string, meaning: "Matched product name or Unknown product."}
+      - {name: consequent_match_status, type: string, meaning: "matched or unmatched against product dimension."}
+      - {name: pair_order_count, type: integer, meaning: "Orders containing both products."}
+      - {name: antecedent_order_count, type: integer, meaning: "Orders containing antecedent product."}
+      - {name: consequent_order_count, type: integer, meaning: "Orders containing consequent product."}
+      - {name: total_valid_orders, type: integer, meaning: "Orders included in basket calculations."}
+      - {name: min_pair_order_count, type: integer, meaning: "Minimum pair count implied by configured support threshold."}
+      - {name: support, type: decimal, meaning: "Pair order count divided by total valid orders."}
+      - {name: confidence, type: decimal, meaning: "Pair order count divided by antecedent order count."}
+      - {name: lift, type: decimal, meaning: "Confidence divided by consequent product support."}
+
+  - name: mart_customer_region_behavior
+    relation: analytics_gold.mart_customer_region_behavior
+    description: "Customer-level region behavior and orphan-region reconciliation measures."
+    grain: "One row per customer, including customers with no sales."
+    access_class: customer_level_restricted
+    query_mode: approved_aggregate_templates_only
+    dimensions: []
+    restricted_columns: [customer_id]
+    caveats:
+      - "Do not return or group by customer_id in the general Text-to-SQL interface."
+      - "Only an approved aggregate summary for Q13 is allowed in v1."
+      - "orphan_region_sales and orphan_region_profit describe unmatched region activity, not a recognized geography."
+    columns:
+      - {name: customer_id, type: string, meaning: "Stable customer identifier; restricted and never sent to the LLM or returned."}
+      - {name: sales_line_count, type: integer, meaning: "Transaction rows for customer."}
+      - {name: matched_region_count, type: integer, meaning: "Distinct matched region codes for customer."}
+      - {name: is_multi_region_customer, type: boolean, meaning: "True when customer has more than one matched region."}
+      - {name: orphan_region_sales_line_count, type: integer, meaning: "Customer transaction rows with unmatched region."}
+      - {name: has_orphan_region_activity, type: boolean, meaning: "True when customer has at least one orphan-region row."}
+      - {name: total_sales, type: decimal, meaning: "Customer-level sum of source sales; restricted from general results."}
+      - {name: total_profit, type: decimal, meaning: "Customer-level sum of source profit; restricted from general results."}
+      - {name: orphan_region_sales, type: decimal, meaning: "Customer-level sales on orphan-region rows; restricted from general results."}
+      - {name: orphan_region_profit, type: decimal, meaning: "Customer-level profit on orphan-region rows; restricted from general results."}
+
+  - name: mart_customer_rfm
+    relation: analytics_gold.mart_customer_rfm
+    description: "Customer-level RFM snapshot and heuristic VIP/inactivity flags."
+    grain: "One row per customer at the snapshot date, including no-purchase customers."
+    access_class: customer_level_restricted
+    query_mode: approved_aggregate_templates_only
+    dimensions: []
+    restricted_columns: [customer_id, monetary_sales]
+    caveats:
+      - "Do not return or group by customer_id in the general Text-to-SQL interface."
+      - "Do not expose customer-level monetary_sales, recency or scores in general results."
+      - "Only approved aggregate summaries for Q8 and Q14 are allowed in v1."
+      - "Snapshot is historical (2024-01-01); churn_risk_90d is an inactivity heuristic, not a churn label or current status."
+    columns:
+      - {name: customer_id, type: string, meaning: "Stable customer identifier; restricted and never sent to the LLM or returned."}
+      - {name: snapshot_date, type: date, meaning: "Date used as the RFM snapshot; currently 2024-01-01."}
+      - {name: last_order_date, type: date, meaning: "Latest order date; null for no-purchase customers."}
+      - {name: recency_days, type: integer, meaning: "Days from last order to snapshot; null for no-purchase customers."}
+      - {name: frequency_orders, type: integer, meaning: "Distinct order count per customer; null for no-purchase customers."}
+      - {name: monetary_sales, type: decimal, meaning: "Customer-level sum of source sales; restricted from general results."}
+      - {name: recency_score, type: integer, meaning: "Recency quintile score from 1 to 5; higher means more recent."}
+      - {name: frequency_score, type: integer, meaning: "Frequency quintile score from 1 to 5; higher means more orders."}
+      - {name: monetary_score, type: integer, meaning: "Monetary quintile score from 1 to 5; higher means more source sales."}
+      - {name: is_vip, type: boolean, meaning: "True when monetary_score = 5; null for no-purchase customers."}
+      - {name: churn_risk_90d, type: boolean, meaning: "True when recency_days >= 90; null for no-purchase customers."}
+      - {name: vip_churn_risk, type: boolean, meaning: "True when is_vip and churn_risk_90d are both true."}
+      - {name: rfm_status, type: string, meaning: "scored or no_purchase_history; not a marketing lifecycle segment."}

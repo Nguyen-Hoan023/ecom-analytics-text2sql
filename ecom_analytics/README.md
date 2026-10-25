@@ -1,40 +1,39 @@
-\# E-Commerce Analytics dbt project
+﻿# E-Commerce Analytics dbt project
 
+This dbt project transforms the DLT-loaded DuckDB Bronze tables into staging,
+intermediate, and Gold analytics models.
 
+## Model layers
 
-Project này dùng dbt để transform dữ liệu Bronze trong DuckDB thành các tầng Silver, Intermediate và Gold.
+- **Sources:** Four Bronze tables loaded from SQL Server by DLT.
+- **Staging:** `stg_customers`, `stg_ecom_sales`, `stg_products`, and `stg_regions`.
+- **Intermediate:** `int_sales_enriched`, which enriches sales with customer,
+  product, and region attributes while retaining unmatched dimension keys.
+- **Gold marts:** Business-facing models for segment profitability, discount
+  analysis, loss-making orders, RFM, monthly performance, product performance,
+  geography, and category mix.
 
+## Run dbt
 
-
-\## Model layers
-
-
-
-\- \*\*Sources:\*\* Bốn bảng Bronze được DLT nạp từ SQL Server.
-
-\- \*\*Staging:\*\* `stg\_customers`, `stg\_ecom\_sales`, `stg\_products`, `stg\_regions`.
-
-\- \*\*Intermediate:\*\* `int\_sales\_enriched`, kết hợp giao dịch với customer, product và region.
-
-\- \*\*Marts:\*\* Các model Gold phục vụ phân tích doanh số, discount, đơn lỗ, RFM, theo tháng và hiệu suất sản phẩm.
-
-
-
-\## Chạy dbt
-
-
-
-Activate môi trường ảo trước, sau đó chạy các lệnh từ thư mục này:
-
-
+Run dbt through the repository wrapper from the repository root. It supplies the
+absolute DuckDB path and a temporary profile generated from the safe project
+template, so it does not depend on the current directory or replace the local
+Windows profile.
 
 ```powershell
+uv run --active python scripts/project.py dbt parse
+uv run --active python scripts/project.py dbt build
+uv run --active python scripts/project.py dbt show --select mart_sales_by_segment
+```
 
-uv run --active dbt parse
+`dbt build` runs models and their configured data tests. `dbt parse` only checks
+the project graph and does not require a warehouse. Data-running commands stop
+before execution if the warehouse file is missing. See
+[`docs/phase-04-dbt-transformation.md`](../docs/phase-04-dbt-transformation.md)
+for project-specific model validation steps. To run from another working
+directory, invoke the wrapper using the absolute path to the clone and its active
+Python environment.
 
-uv run --active dbt run
-
-uv run --active dbt test
-
-uv run --active dbt show --select mart\_sales\_by\_segment
+The root `README.md` documents the full DLT → DuckDB → dbt → analytics and
+Text-to-SQL → Airflow/Cosmos workflow.
 

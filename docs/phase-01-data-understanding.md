@@ -123,9 +123,9 @@ Các giả định chính của v1 là: ý nghĩa gross/net của `sales` chưa 
 | 9 | Cross-sell Consumer vs Corporate | ecom_sales + product | V1 so sánh category revenue share trong tổng sales của từng segment; gọi rõ là category mix. |
 | 10 | Top 15 quốc gia theo revenue | ecom_sales + region | `SUM(sales)` theo country nguồn; giữ Unknown/unmatched riêng; không tự chuẩn hóa tên. |
 | 11 | YoY revenue theo tháng | ecom_sales, order_date | Tổng sales theo tháng lịch; growth = `(sales_tháng_này / sales_cùng_tháng_năm_trước) - 1`; growth null nếu năm trước bằng 0. |
-| 12 | Top 3 sản phẩm profit cao nhất mỗi category | ecom_sales + product | `SUM(profit)` theo product/category; xếp giảm dần, tie-break product_code để trả đúng 3 sản phẩm; product orphan vào category Unknown. |
+| 12 | Top 3 sản phẩm profit cao nhất mỗi category | ecom_sales + product | `SUM(profit)` theo product/category; xếp giảm dần, tie-break product_code để trả đúng 3 sản phẩm. Giữ product orphan ở category `Unknown` để đối soát nhưng không xếp hạng `Unknown` như một category nghiệp vụ. |
 | 13 | Customer mua tại nhiều region | ecom_sales, customer_id + region_code | Đếm `COUNT(DISTINCT region_code)` khớp dimension theo customer; đánh dấu riêng giao dịch orphan region. |
-| 14 | RFM segmentation | ecom_sales, customer/order | Dùng công thức, snapshot và quintile scoring nêu trong contract v1. |
+| 14 | RFM segmentation | ecom_sales, customer/order | Dùng công thức, snapshot và quintile scoring nêu trong contract v1; v1 trả numeric R/F/M scores, chưa gán các nhãn lifecycle marketing. |
 | 15 | Sản phẩm thường được mua cùng nhau | ecom_sales, order_id + product_code | Dedupe order-product; tính support/confidence/lift; bắt đầu support 0,5% và kiểm tra độ nhạy. |
 
 Các câu hỏi này là scope nghiệp vụ cho Gold marts và Text-to-SQL evaluation sau này. Quy ước v1 ở trên là hợp đồng để bắt đầu modeling; khi phát hiện kết quả bất thường, cập nhật decision log và phiên bản contract trước khi đổi logic.
@@ -163,10 +163,11 @@ Chỉ điền cột Quan sát sau khi chạy SQL profile. “Đang chờ” khô
 
 | Ngày | Câu hỏi / phát hiện | Bằng chứng | Quyết định / tác động |
 |---|---|---|---|
-| 2026-10-10 | Profile ghi nhận 3 dòng fact duy nhất thiếu dimension match | Query 9a: product PPR000002/PPR000010; region RRR0001; 1 dòng trùng ở cả hai nhóm; sales ảnh hưởng 506, profit 253 | Không tự map mã; giữ fact và khóa nguồn, dùng left join/nhãn unmatched ở Silver/Gold để tránh mất số liệu. |
+| 2026-10-10 | Profile ghi nhận 3 dòng fact duy nhất thiếu dimension match | Query 9a: product PPP000002/PPP000010; region RRR0001; 1 dòng trùng ở cả hai nhóm; sales ảnh hưởng 506, profit 253 | Không tự map mã; giữ fact và khóa nguồn, dùng left join/nhãn unmatched ở Silver/Gold để tránh mất số liệu. |
 | 2026-10-10 | Domain market/region của nguồn live đã được gửi | 23 cặp market-region; Africa 321, Asia Pacific 931, Europe 1.281, LATAM 645, USCA 650; tổng 3.828; mỗi cặp không có trùng region_code | Giữ nhãn và cấp địa lý đúng như nguồn; chỉ tạo mapping sang context/reference nếu xác minh được quy tắc nghiệp vụ. |
 | 2026-10-10 | Chốt metric contract v1 theo bộ quy ước đề xuất | Quy ước grain/công thức, left join, RFM, VIP M=5, inactivity 90 ngày, category revenue mix và market basket support 0,5% | Áp dụng thống nhất trong dbt Gold và Text-to-SQL; công khai giả định sales gross/net chưa rõ và kiểm tra sensitivity cho các ngưỡng. |
 | 2026-10-12 | Phát hiện category/subcategory sản phẩm có dấu hiệu không khớp tên sản phẩm | Truy vấn `stg_products` trả về các ví dụ P000115, P000222, P002156, P002215; truy vấn mart xác nhận nhóm `Unknown` vẫn được giữ nhưng không được xếp hạng | Giữ nguyên taxonomy nguồn; không tự suy đoán mapping. Ghi chú hạn chế khi diễn giải kết quả theo category. |
+| 2026-10-18 | Chốt cách xử lý Unknown cho Q12 và phạm vi output Q14 | Q12 đối soát 15 sản phẩm trong 5 category; có 2 sản phẩm Unknown nhưng 0 sản phẩm Unknown được xếp hạng. Q14 source–mart không mismatch trên population, metric và score | Giữ Unknown trong mart phục vụ đối soát nhưng loại khỏi top 3/category. Ghi rõ RFM v1 là numeric quintile scores, chưa phải lifecycle labels. Chi tiết Q1–Q15 nằm trong [checkpoint đối soát](checkpoint-q1-q15-reconciliation.md). |
 
 ## 8. Điều kiện hoàn thành giai đoạn 1
 

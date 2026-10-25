@@ -1,0 +1,172 @@
+{
+  "evaluation_set_id": "xom_ecom_text2sql_golden",
+  "version": 1,
+  "model": "gemini-3.8-flash",
+  "generated_at_utc": "2026-10-21T02:45:24.370550+00:00",
+  "passed_count": 1,
+  "failed_count": 14,
+  "outcomes": [
+    {
+      "case_id": "q01",
+      "variant": "canonical_vi",
+      "language": "vi",
+      "passed": true,
+      "actual_status": "answered",
+      "failures": []
+    },
+    {
+      "case_id": "q02",
+      "variant": "canonical_vi",
+      "language": "vi",
+      "passed": false,
+      "actual_status": "unavailable",
+      "failures": [
+        "expected an answer; received status 'unavailable'",
+        "service message: Gemini request failed (ClientError); no SQL was executed."
+      ]
+    },
+    {
+      "case_id": "q03",
+      "variant": "canonical_vi",
+      "language": "vi",
+      "passed": false,
+      "actual_status": "unavailable",
+      "failures": [
+        "expected an answer; received status 'unavailable'",
+        "service message: Gemini request failed (ClientError); no SQL was executed."
+      ]
+    },
+    {
+      "case_id": "q04",
+      "variant": "canonical_vi",
+      "language": "vi",
+      "passed": false,
+      "actual_status": "unavailable",
+      "failures": [
+        "expected an answer; received status 'unavailable'",
+        "service message: Gemini request failed (ClientError); no SQL was executed."
+      ]
+    },
+    {
+      "case_id": "q05",
+      "variant": "canonical_vi",
+      "language": "vi",
+      "passed": false,
+      "actual_status": "unavailable",
+      "failures": [
+        "expected an answer; received status 'unavailable'",
+        "service message: Gemini request failed (ClientError); no SQL was executed."
+      ]
+    },
+    {
+      "case_id": "q06",
+      "variant": "canonical_vi",
+      "language": "vi",
+      "passed": false,
+      "actual_status": "unavailable",
+      "failures": [
+        "expected an answer; received status 'unavailable'",
+        "service message: Gemini request failed (ClientError); no SQL was executed."
+      ]
+    },
+    {
+      "case_id": "q07",
+      "variant": "canonical_vi",
+      "language": "vi",
+      "passed": false,
+      "actual_status": "unavailable",
+      "failures": [
+        "expected an answer; received status 'unavailable'",
+        "service message: Gemini request failed (ClientError); no SQL was executed."
+      ]
+    },
+    {
+      "case_id": "q08",
+      "variant": "canonical_vi",
+      "language": "vi",
+      "passed": false,
+      "actual_status": "unavailable",
+      "failures": [
+        "expected an answer; received status 'unavailable'",
+        "service message: Gemini request failed (ClientError); no SQL was executed."
+      ]
+    },
+    {
+      "case_id": "q09",
+      "variant": "canonical_vi",
+      "language": "vi",
+      "passed": false,
+      "actual_status": "unavailable",
+      "failures": [
+        "expected an answer; received status 'unavailable'",
+        "service message: Gemini request failed (ClientError); no SQL was executed."
+      ]
+    },
+    {
+      "case_id": "q10",
+      "variant": "canonical_vi",
+      "language": "vi",
+      "passed": false,
+      "actual_status": "unavailable",
+      "failures": [
+        "expected an answer; received status 'unavailable'",
+        "service message: Gemini request failed (ClientError); no SQL was executed."
+      ]
+    },
+    {
+      "case_id": "q11",
+      "variant": "canonical_vi",
+      "language": "vi",
+      "passed": false,
+      "actual_status": "unavailable",
+      "failures": [
+        "expected an answer; received status 'unavailable'",
+        "service message: Gemini request failed (ClientError); no SQL was executed."
+      ]
+    },
+    {
+      "case_id": "q12",
+      "variant": "canonical_vi",
+      "language": "vi",
+      "passed": false,
+      "actual_status": "unavailable",
+      "failures": [
+        "expected an answer; received status 'unavailable'",
+        "service message: Gemini request failed (ClientError); no SQL was executed."
+      ]
+    },
+    {
+      "case_id": "q13",
+      "variant": "canonical_vi",
+      "language": "vi",
+      "passed": false,
+      "actual_status": "unavailable",
+      "failures": [
+        "expected an answer; received status 'unavailable'",
+        "service message: Gemini request failed (ClientError); no SQL was executed."
+      ]
+    },
+    {
+      "case_id": "q14",
+      "variant": "canonical_vi",
+      "language": "vi",
+      "passed": false,
+      "actual_status": "unavailable",
+      "failures": [
+        "expected an answer; received status 'unavailable'",
+        "service message: Gemini request failed (ClientError); no SQL was executed."
+      ]
+    },
+    {
+      "case_id": "q15",
+      "variant": "canonical_vi",
+      "language": "vi",
+      "passed": false,
+      "actual_status": "unavailable",
+      "failures": [
+        "expected an answer; received status 'unavailable'",
+        "service message: Gemini request failed (ClientError); no SQL was executed."
+      ]
+    }
+  ]
+}

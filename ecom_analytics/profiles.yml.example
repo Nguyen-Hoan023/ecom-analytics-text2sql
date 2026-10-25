@@ -1,0 +1,8 @@
+ecom_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', '/usr/local/airflow/duckdb_warehouse/warehouse.duckdb') }}"
+      schema: analytics
+      threads: 1

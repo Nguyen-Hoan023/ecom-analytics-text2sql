@@ -1,0 +1,66 @@
+name: Astro DAG contracts
+
+on:
+  push:
+    paths:
+      - ".github/workflows/orchestration.yml"
+      - ".python-version"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "ingestion/**"
+      - "text2sql/**"
+      - "ecom_analytics/**"
+      - "orchestration/**"
+      - "scripts/project.py"
+      - "tests/**"
+  pull_request:
+    paths:
+      - ".github/workflows/orchestration.yml"
+      - ".python-version"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "ingestion/**"
+      - "text2sql/**"
+      - "ecom_analytics/**"
+      - "orchestration/**"
+      - "scripts/project.py"
+      - "tests/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  astro-contracts:
+    name: Build image, parse DAGs, and run DAG contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install pinned Astro CLI
+        run: |
+          curl --fail --show-error --silent --location \
+            https://github.com/astronomer/astro-cli/releases/download/v1.46.1/install.sh \
+            | sudo bash -s -- -b /usr/local/bin
+          astro version
+
+      - name: Stage allowlisted runtime source
+        run: python3 orchestration/scripts/prepare_runtime.py
+
+      - name: Build the Astro Runtime image
+        working-directory: orchestration
+        run: docker build --progress=plain -f Dockerfile -t xom-ecom-airflow:ci .
+
+      - name: Parse DAGs and Cosmos graph
+        working-directory: orchestration
+        run: astro dev parse --image-name xom-ecom-airflow:ci
+
+      - name: Run DAG contract tests in Astro Runtime
+        working-directory: orchestration
+        run: astro dev pytest --image-name xom-ecom-airflow:ci tests/dags

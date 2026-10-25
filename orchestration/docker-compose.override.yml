@@ -1,0 +1,30 @@
+services:
+  scheduler:
+    volumes:
+      - ../duckdb_warehouse:/usr/local/airflow/duckdb_warehouse:rw
+      - ./include/runtime/ecom_analytics:/usr/local/airflow/ecom_analytics:ro
+      - ./include/runtime/ingestion:/usr/local/airflow/ingestion:ro
+      - ./include/runtime/text2sql:/usr/local/airflow/text2sql:ro
+    # dbt ls runs while Cosmos parses the DAG and writes target/log artifacts.
+    # Keep the staged project read-only; expose only ephemeral writable paths.
+    tmpfs:
+      - /usr/local/airflow/ecom_analytics/target
+      - /usr/local/airflow/ecom_analytics/logs
+    env_file:
+      - .env
+  webserver:
+    volumes:
+      - ../duckdb_warehouse:/usr/local/airflow/duckdb_warehouse:rw
+      - ./include/runtime/ecom_analytics:/usr/local/airflow/ecom_analytics:ro
+      - ./include/runtime/ingestion:/usr/local/airflow/ingestion:ro
+      - ./include/runtime/text2sql:/usr/local/airflow/text2sql:ro
+    env_file:
+      - .env
+  triggerer:
+    volumes:
+      - ../duckdb_warehouse:/usr/local/airflow/duckdb_warehouse:rw
+      - ./include/runtime/ecom_analytics:/usr/local/airflow/ecom_analytics:ro
+      - ./include/runtime/ingestion:/usr/local/airflow/ingestion:ro
+      - ./include/runtime/text2sql:/usr/local/airflow/text2sql:ro
+    env_file:
+      - .env
