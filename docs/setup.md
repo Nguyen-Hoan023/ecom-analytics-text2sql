@@ -52,7 +52,7 @@ if (-not (Test-Path .env)) {
 notepad .env
 ```
 
-Điền local các biến `XOM_SQLSERVER_HOST`, `XOM_SQLSERVER_PORT`, `XOM_SQLSERVER_DATABASE`, `XOM_SQLSERVER_SCHEMA`, `XOM_SQLSERVER_USERNAME`, `XOM_SQLSERVER_PASSWORD`. Với dataset hiện tại, host/database/schema lần lượt là `db.xomdata.com`, `xomdata_dataset`, `e_commerce`; port là `1433`. Host và port là hai biến riêng. Warehouse mặc định là `duckdb_warehouse/warehouse.duckdb`; path tương đối được neo vào repo root. Có thể đặt `DUCKDB_PATH` ở `.env` hoặc process environment để chọn path khác.
+Điền local các biến `SOURCE_SQLSERVER_HOST`, `SOURCE_SQLSERVER_PORT`, `SOURCE_SQLSERVER_DATABASE`, `SOURCE_SQLSERVER_SCHEMA`, `SOURCE_SQLSERVER_USERNAME`, `SOURCE_SQLSERVER_PASSWORD` theo thông tin kết nối nguồn được cấp cho bạn. Host và port là hai biến riêng. Warehouse mặc định là `duckdb_warehouse/warehouse.duckdb`; path tương đối được neo vào repo root. Có thể đặt `DUCKDB_PATH` ở `.env` hoặc process environment để chọn path khác.
 
 Xác nhận `.env` bị Git ignore mà không in giá trị:
 
@@ -119,7 +119,7 @@ if (-not (Test-Path orchestration/.env)) {
 notepad orchestration/.env
 ```
 
-Điền SQL Server variables theo cấu hình máy (dataset hiện tại: host `db.xomdata.com`, port `1433`, database `xomdata_dataset`, schema `e_commerce`). Trong container, `DUCKDB_PATH` phải là `/usr/local/airflow/duckdb_warehouse/warehouse.duckdb` và `PYTHONPATH` là `/usr/local/airflow`. Không copy root `.env` nguyên trạng sang đây: container dùng path Linux và Compose inject file riêng. Code hiện dùng environment variables, không cần tạo Airflow Connection. Không cần Gemini key cho DAG.
+Điền các biến SQL Server theo cấu hình được cấp. Trong container, `DUCKDB_PATH` phải là `/usr/local/airflow/duckdb_warehouse/warehouse.duckdb` và `PYTHONPATH` là `/usr/local/airflow`. Không copy root `.env` nguyên trạng sang đây: container dùng path Linux và Compose inject file riêng. Code hiện dùng environment variables, không cần tạo Airflow Connection. Không cần Gemini key cho DAG.
 
 Chuẩn bị generated source stage rồi parse/start:
 
@@ -134,7 +134,7 @@ astro dev run dags list-import-errors
 astro dev run dags list
 ```
 
-Kỳ vọng không có import errors và DAG `xom_ecom_warehouse_refresh` xuất hiện. Mở `http://localhost:8080`; dùng thông tin đăng nhập do Astro CLI hiển thị. DAG chỉ chạy thủ công. Xem [operations runbook](operations.md) để trigger và kiểm tra. Hướng dẫn container diagnostics chi tiết hơn có trong [orchestration README](../orchestration/README.md) và [Phase 7 checkpoint](phase-07-airflow-cosmos.md).
+Kỳ vọng không có import errors và DAG `ecommerce_warehouse_refresh` xuất hiện. Mở `http://localhost:8080`; dùng thông tin đăng nhập do Astro CLI hiển thị. DAG chỉ chạy thủ công. Xem [operations runbook](operations.md) để trigger và kiểm tra. Hướng dẫn container diagnostics chi tiết hơn có trong [orchestration README](../orchestration/README.md) và [workflow acceptance evidence](../reports/orchestration/workflow-acceptance.md).
 
 Sau khi đổi source/dbt, dừng Astro trước khi cập nhật generated stage:
 
@@ -160,4 +160,4 @@ Chỉ các file template `.env.example` và `orchestration/.env.example` đượ
 git check-ignore .env orchestration/.env duckdb_warehouse/warehouse.duckdb orchestration/include/runtime
 ```
 
-Tiếp theo: [operations](operations.md) · [architecture](architecture.md) · [Phase 8](phase-08-polish-and-release.md).
+Tiếp theo: [operations](operations.md) · [architecture](architecture.md) · [demo walkthrough](demo.md).

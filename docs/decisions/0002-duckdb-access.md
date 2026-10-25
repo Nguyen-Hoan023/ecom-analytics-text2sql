@@ -2,7 +2,7 @@
 
 - **Trạng thái:** Accepted
 - **Ngày:** 2026-10-25
-- **Phạm vi:** Phase 8.4 — setup và operations
+- **Phạm vi:** Local warehouse setup and operations
 
 ## Bối cảnh
 
@@ -32,5 +32,5 @@ DuckDB là embedded database, không phải server điều phối reader/writer 
 - [Sơ đồ kiến trúc và runtime boundary](../architecture.md)
 - [Hướng dẫn setup](../setup.md)
 - [Operations runbook](../operations.md)
-- [Phase 7 runtime acceptance](../phase-07-airflow-cosmos.md)
+- [Runtime acceptance evidence](../../reports/orchestration/workflow-acceptance.md)
 - [DuckDB 1.5 concurrency documentation](https://duckdb.org/docs/1.5/connect/concurrency)

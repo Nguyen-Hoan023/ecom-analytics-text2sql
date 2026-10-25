@@ -1,4 +1,4 @@
-"""Airflow DAG to orchestrate the Xóm E-Com analytics pipeline end-to-end.
+"""Airflow DAG to orchestrate the e-commerce analytics pipeline end-to-end.
 
 Flow:
   1. preflight_check: verify read-only connectivity to SQL Server source.
@@ -27,7 +27,7 @@ DBT_EXECUTABLE_PATH = Path("/usr/local/airflow/dbt_venv/bin/dbt")
 
 
 @dag(
-    dag_id="xom_ecom_warehouse_refresh",
+    dag_id="ecommerce_warehouse_refresh",
     schedule=None,  # Manual trigger; schedule after verifying idempotency and recovery
     start_date=datetime(2026, 1, 1),
     catchup=False,
@@ -35,7 +35,7 @@ DBT_EXECUTABLE_PATH = Path("/usr/local/airflow/dbt_venv/bin/dbt")
     max_active_tasks=1,  # Cosmos expands to many tasks; serialize those too.
     default_args={"retries": 0},  # Do not retry source writes until recovery is validated.
     doc_md=__doc__,
-    tags=["xom-ecom", "medallion", "dbt", "cosmos"],
+    tags=["ecommerce", "medallion", "dbt", "cosmos"],
 )
 def warehouse_refresh():
 

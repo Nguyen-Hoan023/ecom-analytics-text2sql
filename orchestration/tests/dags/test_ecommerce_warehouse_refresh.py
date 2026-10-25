@@ -1,11 +1,11 @@
-"""Project-specific contracts for the Xom E-Com refresh DAG."""
+"""Project-specific contracts for the e-commerce warehouse refresh DAG."""
 
 from __future__ import annotations
 
 from airflow.models import DagBag
 
 
-DAG_ID = "xom_ecom_warehouse_refresh"
+DAG_ID = "ecommerce_warehouse_refresh"
 
 
 def _load_dag():

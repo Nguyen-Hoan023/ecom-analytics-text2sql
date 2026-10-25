@@ -2,7 +2,7 @@
 
 - **Trạng thái:** Accepted
 - **Ngày:** 2026-10-25
-- **Phạm vi:** Phase 8.1 — inventory và quyết định layout
+- **Phạm vi:** Repository layout and module boundaries
 
 ## Bối cảnh
 
@@ -26,7 +26,7 @@ Phase 8.1–8.2.
 | `orchestration/` | Astro project, DAG, Docker config, staging helper và DAG contract tests | Source/config; `include/runtime/` là generated |
 | `tests/` | Unit/integration-style tests cho Python services | Test code |
 | `sql/` | SQL profiling nguồn có thể chạy lại, không phải dbt model | Analysis source |
-| `docs/` | Metric contract, phase checkpoints, kiến trúc, quyết định và hướng dẫn | Documentation/evidence |
+| `docs/` | Data and metric contracts, architecture, decisions, and operating guides | Documentation/evidence |
 | `reports/text2sql-evaluation/` | JSON evaluation đã sanitize, có thể dùng làm evidence lịch sử | Checked-in evidence |
 | `docs/assets/charts/` | Ảnh chart Gold được README và report nhúng | Checked-in generated artifact |
 | `.venv/`, `.env`, `duckdb_warehouse/`, `logs/`, caches | Môi trường, secrets, database hoặc output runtime trên máy phát triển | Local/generated; ignored |
@@ -72,5 +72,5 @@ trị đủ lớn ở thời điểm hiện tại để bù rủi ro làm hỏng
 ## Bằng chứng và liên kết
 
 - [Sơ đồ kiến trúc](../architecture.md)
-- [Phase 8 — kế hoạch cleanup và release](../phase-08-polish-and-release.md)
-- [Phase 7 — Astro/Airflow/Cosmos runtime](../phase-07-airflow-cosmos.md)
+- [Operating model and orchestration](../../orchestration/README.md)
+- [Runtime acceptance evidence](../../reports/orchestration/workflow-acceptance.md)

@@ -410,7 +410,7 @@ def _report_payload(report: NLEvaluationReport) -> dict[str, Any]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Evaluate Gemini Text-to-SQL answers against the Xom E-Com golden set."
+        description="Evaluate Text-to-SQL answers against the e-commerce golden set."
     )
     parser.add_argument("--evaluation-set", type=Path, default=DEFAULT_GOLDEN_SET_PATH)
     parser.add_argument("--database", type=Path, default=None, help="Optional DuckDB warehouse path.")

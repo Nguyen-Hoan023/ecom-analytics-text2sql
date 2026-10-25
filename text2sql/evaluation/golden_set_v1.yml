@@ -1,4 +1,4 @@
-evaluation_set_id: xom_ecom_text2sql_golden
+evaluation_set_id: ecommerce_text2sql_golden
 version: 1
 status: warehouse_baselines_passed
 baseline_confirmation: "15/15 cases passed; confirmed by the project owner on 2026-10-20."
@@ -6,7 +6,7 @@ case_count: 15
 guardrail_case_count: 8
 purpose: >
   Golden set for evaluating natural-language-to-query behavior against the
-  current Xom E-Com Gold marts, access policy, and metric contract.
+  current e-commerce Gold marts, access policy, and metric contract.
 snapshot:
   source_profiled_at: "2026-10-10T14:25:00Z"
   reconciliation_checkpoint: "2026-10-18"
@@ -14,9 +14,8 @@ snapshot:
   data_period_end: "2023-12-31"
   rfm_snapshot_date: "2024-01-01"
 sources:
-  original_questions: "https://github.com/tunguyenn99/a-simple-t2s-flow/blob/main/context.md"
-  project_metric_map: "../../docs/phase-01-data-understanding.md"
-  reconciled_results: "../../docs/checkpoint-q1-q15-reconciliation.md"
+  project_metric_map: "../../docs/data-contract.md"
+  reconciled_results: "../../reports/warehouse-reconciliation.md"
   semantic_catalog: "../semantic_catalog.yml"
   access_policy: "../access_policy.yml"
 usage:

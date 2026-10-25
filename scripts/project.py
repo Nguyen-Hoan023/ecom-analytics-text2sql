@@ -85,7 +85,7 @@ def _run_dbt(command: str, arguments: Sequence[str]) -> int:
 
     # The project-level template has no credentials. A temporary copy avoids
     # depending on or overwriting any ignored Windows profiles.yml.
-    with tempfile.TemporaryDirectory(prefix="xom-ecom-dbt-profile-") as profile_directory:
+    with tempfile.TemporaryDirectory(prefix="ecommerce-dbt-profile-") as profile_directory:
         temporary_profile = Path(profile_directory) / "profiles.yml"
         shutil.copyfile(DBT_PROFILE_TEMPLATE, temporary_profile)
         process_arguments = [

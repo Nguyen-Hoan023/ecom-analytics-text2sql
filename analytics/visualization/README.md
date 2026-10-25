@@ -1,39 +1,37 @@
-# Gold visualizations
+# Static Gold visualizations
 
-This module generates a reproducible set of static charts from the Gold marts in DuckDB. It never connects to SQL Server and opens the warehouse in read-only mode.
+This package generates ten reproducible aggregate charts from DuckDB Gold marts. It opens the warehouse read-only and never connects to SQL Server.
 
 ## Run
 
-Run from the repository root after DLT ingestion and a successful dbt build:
+Build the warehouse first by loading the source snapshot and running dbt. Then, from the repository root:
 
-```powershell
-uv run --active python analytics/visualization/generate_charts.py
-```
+    uv run --project . python scripts/project.py charts
 
-The script checks that its required Gold marts exist and reconciles sales-line counts, total sales, and total profit across the segment, discount, and monthly marts before creating images.
+The command wrapper resolves the database path. The generator checks its required marts and reconciles key line-count, sales, and profit totals before creating charts. Output files are written to <code>docs/assets/charts/</code>.
 
-## Output
+## Chart inventory
 
-Charts are written to `docs/assets/charts/`:
-
-| File | Source mart(s) | What it shows |
+| File | Mart inputs | Question |
 |---|---|---|
-| `01_executive_overview.png` | Sales by segment, monthly sales, customer RFM | Total sales, profit, margin, orders, sales lines, customers and reporting period |
-| `02_discount_profitability.png` | Discount profitability | Total profit and loss-making line rate by discount band |
-| `03_segment_profitability.png` | Sales by segment | Total sales, total profit and profit margin as separate measures |
-| `04_monthly_performance.png` | Monthly sales | Sales, profit and YoY sales growth |
-| `05_category_mix_by_segment.png` | Category sales mix by segment | Share of each category within its segment |
-| `06_product_performance.png` | Product performance | Top products by units sold and total profit |
-| `07_geography_performance.png` | Market profitability, top countries | Market profit margin and top 10 countries by sales |
-| `08_rfm_risk_sensitivity.png` | Customer RFM | Inactivity-risk counts at 60, 90 and 180 days, including VIPs |
-| `09_customer_region_behavior.png` | Customer region behavior | Customers by number of matched region codes in transaction history |
-| `10_customer_profile.png` | Gender and occupation profile | Aggregate customer counts by gender and occupation |
+| <code>01_executive_overview.png</code> | Sales by segment, monthly sales, customer RFM | What are the headline sales, profit, margin, orders, customers, and period? |
+| <code>02_discount_profitability.png</code> | Discount profitability | How do profit and loss-line counts vary by discount band? |
+| <code>03_segment_profitability.png</code> | Sales by segment | How do sales, profit, and margin compare by segment? |
+| <code>04_monthly_performance.png</code> | Monthly sales | How do sales and profit trend over time and compare year over year? |
+| <code>05_category_mix_by_segment.png</code> | Category sales mix | How does category share differ by segment? |
+| <code>06_product_performance.png</code> | Product performance | Which products lead by units sold and total profit? |
+| <code>07_geography_performance.png</code> | Market and country marts | How do markets compare and which countries rank by sales? |
+| <code>08_rfm_risk_sensitivity.png</code> | Customer RFM | How sensitive are inactivity-risk counts to the 60/90/180-day thresholds? |
+| <code>09_customer_region_behavior.png</code> | Customer region behavior | How many customers have sales across multiple matched regions? |
+| <code>10_customer_profile.png</code> | Demographic profile | How is the customer population distributed by gender and occupation? |
 
-## Interpretation notes
+See [chart assets](../../docs/assets/charts/README.md) for file-level notes.
 
-- Monetary values retain the source unit; no currency symbol is inferred.
-- Discount charts compare observed transaction groups and do not establish causality.
-- RFM inactivity risk is a heuristic evaluated at the `2024-01-01` snapshot, not a churn label.
-- Unknown geography and products are kept visible in mart-level reconciliation and excluded from ranked known-market/product comparisons where applicable.
-- Category labels follow the source taxonomy, which has known quality concerns documented in `docs/phase-01-data-understanding.md`.
-- The market-basket mart is intentionally not charted as a recommendation: current SKU pair counts are too sparse at the reviewed support thresholds.
+## Interpretation and privacy
+
+- Monetary values retain source units; the charts do not infer a currency symbol.
+- Discount comparisons are descriptive and do not establish causality.
+- RFM risk is a recency heuristic at the historical snapshot, not a labeled churn outcome.
+- Unknown geography and product values remain visible when needed for reconciliation.
+- The chart generator reads Gold aggregates and does not export customer-level identifiers.
+- Market-basket pairs are not presented as recommendations because current product-pair support is sparse.

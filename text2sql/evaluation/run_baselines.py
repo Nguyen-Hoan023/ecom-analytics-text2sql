@@ -445,7 +445,7 @@ def run_baselines(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Evaluate the Xom E-Com SQL/template baselines.")
+    parser = argparse.ArgumentParser(description="Evaluate the e-commerce SQL/template baselines.")
     parser.add_argument("--evaluation-set", type=Path, default=DEFAULT_GOLDEN_SET_PATH)
     parser.add_argument("--database", type=Path, default=None, help="Optional DuckDB warehouse path.")
     parser.add_argument("--role", default=None, help="Trusted configured role; defaults to policy default.")

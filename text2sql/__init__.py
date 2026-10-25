@@ -1,4 +1,4 @@
-"""Guarded Text-to-SQL building blocks for the Xom E-Com analytics project."""
+"""Guarded Text-to-SQL building blocks for the analytics project."""
 
 from text2sql.catalog import (
     AccessPolicy,

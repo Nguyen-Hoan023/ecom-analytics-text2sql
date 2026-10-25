@@ -4,7 +4,7 @@ Runbook này mô tả cách vận hành pipeline batch hiện tại. Project dù
 
 ## Các bất biến vận hành
 
-1. DAG `xom_ecom_warehouse_refresh` chạy thủ công (`schedule=None`), giới hạn một run và một task cùng lúc, `retries=0`.
+1. DAG `ecommerce_warehouse_refresh` chạy thủ công (`schedule=None`), giới hạn một run và một task cùng lúc, `retries=0`.
 2. DLT thay snapshot Bronze với `write_disposition="replace"`; dbt dựng lại Silver/Intermediate/Gold, sau đó quality gate chạy 15 baseline cases. DAG không gọi Gemini.
 3. Host `.env` và `orchestration/.env` là hai cấu hình riêng. Container cần DuckDB path Linux `/usr/local/airflow/duckdb_warehouse/warehouse.duckdb`; path Windows không dùng được bên trong container.
 4. Với DuckDB 1.5.x đang pin, nhiều process chỉ đọc có thể cùng đọc file, nhưng không được có writer đồng thời. Khi refresh, tắt UI/charts/baselines và query host; chỉ phục vụ lại sau khi DAG xong. [Quy tắc concurrency của DuckDB 1.5](https://duckdb.org/docs/1.5/connect/concurrency).
@@ -23,7 +23,7 @@ Runbook này mô tả cách vận hành pipeline batch hiện tại. Project dù
 
 ### Chạy và chấp nhận
 
-1. Mở `http://localhost:8080`, chọn `xom_ecom_warehouse_refresh` rồi bấm **Trigger DAG**. Không bật lịch định kỳ.
+1. Mở `http://localhost:8080`, chọn `ecommerce_warehouse_refresh` rồi bấm **Trigger DAG**. Không bật lịch định kỳ.
 2. Theo dõi graph/grid theo thứ tự `preflight_check` → `dlt_ingestion` → `dbt_transform` → `quality_gate`.
 3. Chỉ chấp nhận khi DAG `success`, DLT source/target reconciliation thành công, dbt model/test pass và quality gate báo 15/15.
 4. Ghi `dag_run_id`, thời điểm chạy, task states và số liệu tổng hợp đã đối chiếu. Không lưu credentials hoặc raw customer rows vào báo cáo/log chia sẻ.
@@ -75,9 +75,11 @@ Khi preflight fail do cấu hình nguồn và đã sửa xong, ưu tiên **tạo
 Trên Windows host, dùng host đang cấu hình (không nhập username/password vào các lệnh):
 
 ```powershell
-$sourceHost = "db.xomdata.com"
-Resolve-DnsName $sourceHost
-Test-NetConnection $sourceHost -Port 1433 -InformationLevel Quiet
+$sourceHost = Read-Host "Enter SOURCE_SQLSERVER_HOST from your local configuration"
+$sourcePort = [int](Read-Host "Enter SOURCE_SQLSERVER_PORT from your local configuration")
+Resolve-DnsName -Name $sourceHost
+Test-NetConnection -ComputerName $sourceHost -Port $sourcePort -InformationLevel Quiet
+Remove-Variable sourceHost, sourcePort
 ```
 
 DNS/TCP thành công chỉ xác nhận đường mạng. Kiểm tra login/database từ host:
@@ -124,4 +126,4 @@ Nếu đổi source code, dừng stack rồi refresh source stage theo [setup gu
 
 Mỗi refresh nên ghi thời điểm, `dag_run_id`, trạng thái DAG, task đầu tiên fail (nếu có), bốn source row counts, total sales/profit và số baseline pass. Nếu gửi log chẩn đoán, chỉ trích phần liên quan sau khi redact credentials, tokens và định danh khách hàng.
 
-Chi tiết runtime: [orchestration README](../orchestration/README.md) · [Phase 7 checkpoint](phase-07-airflow-cosmos.md) · [Q1–Q15 reconciliation](checkpoint-q1-q15-reconciliation.md).
+Chi tiết runtime: [orchestration README](../orchestration/README.md) · [workflow acceptance evidence](../reports/orchestration/workflow-acceptance.md) · [Q1–Q15 warehouse reconciliation](../reports/warehouse-reconciliation.md).

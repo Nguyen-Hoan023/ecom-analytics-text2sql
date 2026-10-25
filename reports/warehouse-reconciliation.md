@@ -1,9 +1,9 @@
-# Checkpoint — Đối soát 15 câu hỏi nghiệp vụ
+# Warehouse reconciliation report
 
-**Trạng thái:** Kết quả Q1–Q15 đã đối soát cho snapshot hiện có; câu hỏi, baseline SQL/template và reference assertions đã được đóng gói tại [Text-to-SQL golden evaluation set v1](../text2sql/evaluation/golden_set_v1.yml). Có baseline runner tại [`text2sql/evaluation/run_baselines.py`](../text2sql/evaluation/run_baselines.py); cần chạy trên warehouse trước khi dùng làm gate tự động.
+**Result:** Owner-shared output confirmed 15/15 warehouse baseline cases passed for the recorded snapshot. The cases and expected assertions are maintained in the golden set v1 and can be rerun with the baseline runner.
 **Ngày tổng hợp checkpoint:** 2026-10-18.
 **Mốc source profile:** 2026-10-10 14:25 UTC.
-**Bằng chứng:** Kết quả query và `dbt show` được chia sẻ trong quá trình triển khai. SQL ad-hoc gốc dùng để đối chiếu SQL Server không được lưu; bộ baseline hiện có tại golden evaluation set dùng Gold marts và cần chạy xác nhận trước khi thành audit tự động. Đây là checkpoint theo snapshot; cần chạy lại sau mỗi lần thay snapshot hoặc đổi logic model.
+**Evidence:** Query outputs and dbt previews were shared during implementation. The original ad-hoc SQL Server reconciliation queries were not retained. This report is snapshot-specific; rerun the maintained baseline suite after source or model changes.
 
 ## Phạm vi và quy tắc đánh giá
 
@@ -59,6 +59,6 @@
 - Nếu dùng churn cho vận hành, cần nhãn kết quả mua lại/churn ở các snapshot tương lai và kiểm định khả năng dự báo.
 - Đây là snapshot tĩnh; chưa chứng minh freshness hoặc khả năng đối soát tự động mỗi lần pipeline chạy.
 
-## Bước tiếp theo
+## Revalidation
 
-Checkpoint kết quả Gold và Q1–Q15 đã đủ để bắt đầu giai đoạn Text-to-SQL. Bộ câu hỏi evaluation đã được đóng gói cùng baseline SQL/template, expected output contracts và guardrail cases; baseline runner đã có nhưng chưa chạy trên warehouse trong checkpoint này. Chạy lệnh trong tài liệu Phase 6 và xử lý mọi mismatch trước khi tích hợp Gemini. Airflow/Cosmos vẫn để sau khi pipeline và evaluation chạy ổn định độc lập.
+Rerun the baseline suite after changing the source snapshot, metric definitions, or Gold model logic. Review mismatches before changing expected values; do not update a golden contract merely to make a failing result pass. For Text-to-SQL suite commands, see the evaluation README.

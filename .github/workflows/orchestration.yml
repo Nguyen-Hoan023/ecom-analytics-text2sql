@@ -55,12 +55,12 @@ jobs:
 
       - name: Build the Astro Runtime image
         working-directory: orchestration
-        run: docker build --progress=plain -f Dockerfile -t xom-ecom-airflow:ci .
+        run: docker build --progress=plain -f Dockerfile -t ecommerce-analytics-airflow:ci .
 
       - name: Parse DAGs and Cosmos graph
         working-directory: orchestration
-        run: astro dev parse --image-name xom-ecom-airflow:ci
+        run: astro dev parse --image-name ecommerce-analytics-airflow:ci
 
       - name: Run DAG contract tests in Astro Runtime
         working-directory: orchestration
-        run: astro dev pytest --image-name xom-ecom-airflow:ci tests/dags
+        run: astro dev pytest --image-name ecommerce-analytics-airflow:ci tests/dags

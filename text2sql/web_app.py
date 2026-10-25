@@ -30,7 +30,7 @@ _PAGE = """<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Xóm E-Com | Hỏi đáp dữ liệu</title>
+  <title>E-Commerce Analytics | Data Assistant</title>
   <style>
     :root { color-scheme: light; --ink:#172b4d; --muted:#62718a; --line:#dce3ed; --blue:#2559c7; --bg:#f4f7fb; --green:#087443; --red:#b42318; }
     * { box-sizing:border-box; }
@@ -80,7 +80,7 @@ _PAGE = """<!doctype html>
 <body>
 <main>
   <header>
-    <h1>Xóm E-Com · Hỏi đáp dữ liệu</h1>
+    <h1>E-Commerce Analytics · Data Assistant</h1>
     <div class="subtitle">Đặt câu hỏi bằng tiếng Việt hoặc tiếng Anh trên các Gold marts được phê duyệt.</div>
   </header>
   <section class="panel">
@@ -320,7 +320,7 @@ def _response_payload(response: Any) -> dict[str, Any]:
 
 
 class _RequestHandler(BaseHTTPRequestHandler):
-    server_version = "XomEcomTextSQL/1.0"
+    server_version = "EcommerceAnalytics/1.0"
 
     def log_message(self, format: str, *args: Any) -> None:
         # Never log user questions or query results to the terminal.
@@ -417,7 +417,7 @@ def _demo_payload() -> dict[str, Any]:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Run the local Xom E-Com Text-to-SQL browser UI.")
+    parser = argparse.ArgumentParser(description="Run the local e-commerce Text-to-SQL browser UI.")
     parser.add_argument("--port", type=int, default=8765, help="Local HTTP port (default: 8765).")
     parser.add_argument("--no-browser", action="store_true", help="Do not open the browser automatically.")
     args = parser.parse_args(argv)
@@ -429,7 +429,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except OSError as exc:
         print(f"Could not start the local UI ({type(exc).__name__}).", file=sys.stderr)
         return 2
-    print(f"Xóm E-Com Text-to-SQL is available at {address}", flush=True)
+    print(f"E-commerce Text-to-SQL is available at {address}", flush=True)
     print("Press Ctrl+C to stop. This server listens on localhost only.", flush=True)
     if not args.no_browser:
         webbrowser.open(address)

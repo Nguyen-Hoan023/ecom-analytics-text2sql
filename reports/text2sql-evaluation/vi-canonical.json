@@ -1,5 +1,5 @@
 {
-  "evaluation_set_id": "xom_ecom_text2sql_golden",
+  "evaluation_set_id": "ecommerce_text2sql_golden",
   "version": 1,
   "model": "gemini-3.8-flash",
   "generated_at_utc": "2026-10-21T02:45:24.370550+00:00",

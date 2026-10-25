@@ -25,7 +25,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if callable(reconfigure):
             reconfigure(encoding="utf-8", errors="backslashreplace")
 
-    parser = argparse.ArgumentParser(description="Ask a read-only question over Xom E-Com Gold marts.")
+    parser = argparse.ArgumentParser(description="Ask a read-only question over e-commerce Gold marts.")
     parser.add_argument("question", nargs="+", help="A question in Vietnamese or English.")
     parser.add_argument(
         "--show-prompt",

@@ -1,10 +1,10 @@
 /*
-Phase 1: read-only source profile for Xom e_commerce schema (SQL Server).
+Read-only source profile for the e_commerce schema in SQL Server.
 
 How to run:
   1. Connect in SSMS/DBeaver/DataGrip to the database containing schema e_commerce.
   2. Run this file as a read-only account if available.
-  3. Record aggregate results in docs/phase-01-data-understanding.md.
+  3. Record aggregate findings in docs/data-contract.md.
 
 This script contains SELECT statements only. It deliberately avoids names,
 emails and raw customer samples so its result sets are safe to summarize.

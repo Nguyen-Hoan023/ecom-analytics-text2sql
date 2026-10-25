@@ -1,1 +1,1 @@
-"""Source ingestion components for the Xom E-Com pipeline."""
+"""Source ingestion components for the e-commerce analytics pipeline."""

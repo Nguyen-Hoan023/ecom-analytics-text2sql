@@ -1,4 +1,4 @@
-"""Load the four Xóm E-Com source tables into the local DuckDB Bronze dataset."""
+"""Load the four e-commerce source tables into the local DuckDB Bronze dataset."""
 
 from __future__ import annotations
 
@@ -58,7 +58,7 @@ def main() -> None:
         )
 
         pipeline = dlt.pipeline(
-            pipeline_name="xom_ecom_sqlserver",
+            pipeline_name="ecommerce_sqlserver",
             destination=dlt.destinations.duckdb(str(settings.duckdb_path)),
             dataset_name=dataset_name,
             progress=log_progress(dump_system_stats=False),

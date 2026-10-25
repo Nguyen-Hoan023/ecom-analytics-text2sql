@@ -51,10 +51,10 @@ class Settings:
         load_dotenv(dotenv_path=env_file, override=False)
 
         required = {
-            "XOM_SQLSERVER_HOST": os.getenv("XOM_SQLSERVER_HOST", "").strip(),
-            "XOM_SQLSERVER_DATABASE": os.getenv("XOM_SQLSERVER_DATABASE", "").strip(),
-            "XOM_SQLSERVER_USERNAME": os.getenv("XOM_SQLSERVER_USERNAME", "").strip(),
-            "XOM_SQLSERVER_PASSWORD": os.getenv("XOM_SQLSERVER_PASSWORD", ""),
+            "SOURCE_SQLSERVER_HOST": os.getenv("SOURCE_SQLSERVER_HOST", "").strip(),
+            "SOURCE_SQLSERVER_DATABASE": os.getenv("SOURCE_SQLSERVER_DATABASE", "").strip(),
+            "SOURCE_SQLSERVER_USERNAME": os.getenv("SOURCE_SQLSERVER_USERNAME", "").strip(),
+            "SOURCE_SQLSERVER_PASSWORD": os.getenv("SOURCE_SQLSERVER_PASSWORD", ""),
         }
         missing = [name for name, value in required.items() if not value.strip()]
         if missing:
@@ -64,23 +64,23 @@ class Settings:
                 "Copy .env.example to .env and fill the local values."
             )
 
-        port_value = os.getenv("XOM_SQLSERVER_PORT", "1433").strip()
+        port_value = os.getenv("SOURCE_SQLSERVER_PORT", "1433").strip()
         try:
             port = int(port_value)
         except ValueError as exc:
-            raise ValueError("XOM_SQLSERVER_PORT must be an integer.") from exc
+            raise ValueError("SOURCE_SQLSERVER_PORT must be an integer.") from exc
         if not 1 <= port <= 65535:
-            raise ValueError("XOM_SQLSERVER_PORT must be between 1 and 65535.")
+            raise ValueError("SOURCE_SQLSERVER_PORT must be between 1 and 65535.")
 
-        schema = os.getenv("XOM_SQLSERVER_SCHEMA", "e_commerce").strip()
+        schema = os.getenv("SOURCE_SQLSERVER_SCHEMA", "e_commerce").strip()
         if not schema:
-            raise ValueError("XOM_SQLSERVER_SCHEMA must not be empty.")
+            raise ValueError("SOURCE_SQLSERVER_SCHEMA must not be empty.")
 
         return cls(
-            sqlserver_host=required["XOM_SQLSERVER_HOST"],
-            sqlserver_database=required["XOM_SQLSERVER_DATABASE"],
-            sqlserver_username=required["XOM_SQLSERVER_USERNAME"],
-            sqlserver_password=required["XOM_SQLSERVER_PASSWORD"],
+            sqlserver_host=required["SOURCE_SQLSERVER_HOST"],
+            sqlserver_database=required["SOURCE_SQLSERVER_DATABASE"],
+            sqlserver_username=required["SOURCE_SQLSERVER_USERNAME"],
+            sqlserver_password=required["SOURCE_SQLSERVER_PASSWORD"],
             sqlserver_port=port,
             sqlserver_schema=schema,
             duckdb_path=resolve_warehouse_path(),

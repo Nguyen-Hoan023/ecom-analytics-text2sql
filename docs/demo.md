@@ -33,7 +33,6 @@ Airflow điều phối batch refresh, không chạy Text-to-SQL serving. UI và 
 Từ repo root, dùng virtual environment hiện có:
 
 ```powershell
-cd "D:\E-Commerce project\ecom-analytics-text2sql"
 uv run --active python scripts/project.py doctor
 uv run --active python scripts/project.py offline-checks
 ```
@@ -42,7 +41,7 @@ uv run --active python scripts/project.py offline-checks
 
 ## 3. Nguồn → Bronze → Silver → Gold
 
-Nguồn có bốn bảng `customer`, `ecom_sales`, `product`, `region`. `ecom_sales.row_id` là grain transaction; dimension nối với fact qua customer/product/region keys. Trong snapshot đã profile có 51.290 sales lines, 17.415 customers, 28.356 products và 3.828 regions. Orphan keys được giữ bằng left join và gắn `Unknown`/unmatched, tránh làm mất sales/profit; xem [Phase 1](phase-01-data-understanding.md).
+Nguồn có bốn bảng `customer`, `ecom_sales`, `product`, `region`. `ecom_sales.row_id` là grain transaction; dimension nối với fact qua customer/product/region keys. Trong snapshot đã profile có 51.290 sales lines, 17.415 customers, 28.356 products và 3.828 regions. Orphan keys được giữ bằng left join và gắn `Unknown`/unmatched, tránh làm mất sales/profit; xem [data contract](data-contract.md).
 
 Các lệnh dưới đây kết nối nguồn và nạp snapshot, sau đó dựng dbt và so baseline:
 
@@ -53,7 +52,7 @@ uv run --active python scripts/project.py dbt build
 uv run --active python scripts/project.py baselines
 ```
 
-Mốc tổng đối soát: 51.290 sales lines, 25.728 orders, `total_sales` 6.517.674,00 và `total_profit` 1.065.413,58. Đây là tổng bốn năm theo đơn vị nguồn, không phải doanh thu một năm. Xem [checkpoint Q1–Q15](checkpoint-q1-q15-reconciliation.md).
+Mốc tổng đối soát: 51.290 sales lines, 25.728 orders, `total_sales` 6.517.674,00 và `total_profit` 1.065.413,58. Đây là tổng bốn năm theo đơn vị nguồn, không phải doanh thu một năm. Xem [Q1–Q15 warehouse reconciliation](../reports/warehouse-reconciliation.md).
 
 ## 4. Q02 trong Gold mart
 
@@ -85,7 +84,7 @@ Script đọc DuckDB read-only, đối soát các tổng chính rồi ghi PNG v�
 
 ![Profitability theo discount band](assets/charts/02_discount_profitability.png)
 
-Trong snapshot, discount bands trên 20% có tổng profit âm; band trên 60% có 100% transaction lines bị lỗ. Đây là mối liên hệ mô tả, **không chứng minh discount gây lỗ**. Hướng điều tra là phân rã theo category/product và thử nghiệm có đối chứng trước khi thay đổi chính sách. Xem [business insights](phase-05-business-insights.md).
+Trong snapshot, discount bands trên 20% có tổng profit âm; band trên 60% có 100% transaction lines bị lỗ. Đây là mối liên hệ mô tả, **không chứng minh discount gây lỗ**. Hướng điều tra là phân rã theo category/product và thử nghiệm có đối chứng trước khi thay đổi chính sách. Xem [business insights](business-insights.md).
 
 ### Segment profitability
 
@@ -117,9 +116,9 @@ Lệnh này cần `GEMINI_API_KEY` trong root `.env` và dùng quota. Luồng l�
 
 ## 7. Airflow/Cosmos trong luồng
 
-DAG `xom_ecom_warehouse_refresh` chạy thủ công theo bốn chặng: preflight → DLT → dbt/Cosmos models và tests → quality gate 15 baselines. DAG không gọi Gemini và không thay thế UI Text-to-SQL.
+DAG `ecommerce_warehouse_refresh` chạy thủ công theo bốn chặng: preflight → DLT → dbt/Cosmos models và tests → quality gate 15 baselines. DAG không gọi Gemini và không thay thế UI Text-to-SQL.
 
-Phase 7 đã được chủ dự án xác nhận: hai lần chạy với cùng nguồn thành công và được đối chiếu idempotency; khi host nguồn bị đổi sai, preflight fail và downstream không chạy; khôi phục host thì pipeline chạy lại thành công. Xem [acceptance evidence](../reports/orchestration/phase-07-acceptance.md). Run IDs không được giữ lại.
+Đã ghi nhận hai lần chạy thành công với cùng nguồn và đối chiếu idempotency; khi cấu hình host nguồn sai, preflight fail và downstream không chạy; khôi phục cấu hình thì pipeline chạy lại thành công. Đây là xác nhận của chủ dự án, không phải log export; run IDs không được giữ lại. Xem [workflow acceptance evidence](../reports/orchestration/workflow-acceptance.md).
 
 ## 8. Những giới hạn cần nói khi trình bày
 
@@ -129,13 +128,13 @@ Phase 7 đã được chủ dự án xác nhận: hai lần chạy với cùng n
 - Market basket không có cặp đạt support chính 0,5%; các cặp ở ngưỡng thấp quá thưa để làm khuyến nghị SKU.
 - Currency và ý nghĩa gross/net của source `sales` chưa được xác nhận.
 - Checkpoint là bằng chứng cho snapshot này. Sau khi refresh nguồn/đổi model, chạy lại `dbt build`, baselines và chart reconciliation.
-- CI Phase 8.5 đã được cấu hình nhưng chưa có lần chạy đầu tiên trên clean GitHub runner; workflow source không phải bằng chứng CI pass.
+- CI workflows cần được theo dõi trên GitHub Actions sau mỗi thay đổi; cấu hình workflow trong repository không tự nó chứng minh một lần chạy đã pass.
 
 ## 9. Tài liệu tham khảo trong repo
 
-- [Data profile và metric contract](phase-01-data-understanding.md)
-- [Q1–Q15 reconciliation](checkpoint-q1-q15-reconciliation.md)
-- [Business insights](phase-05-business-insights.md)
-- [Text-to-SQL checkpoint](phase-06-progress-checkpoint.md)
-- [Airflow/Cosmos checkpoint](phase-07-airflow-cosmos.md)
+- [Data profile và metric contract](data-contract.md)
+- [Q1–Q15 reconciliation](../reports/warehouse-reconciliation.md)
+- [Business insights](business-insights.md)
+- [Text-to-SQL guide](../text2sql/README.md)
+- [Airflow/Cosmos operations](../orchestration/README.md)
 - [Setup](setup.md) · [Operations](operations.md) · [Evidence index](../reports/README.md)
