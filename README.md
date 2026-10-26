@@ -190,7 +190,7 @@ For questions that need live model generation, configure <code>GEMINI_API_KEY</c
 
 ## Text-to-SQL (T2S) Natural Language Query Engine
 
-The T2S service lets an analyst ask questions in Vietnamese or English and receive a query result without writing SQL. It serves the already-built **Gold marts**; it does not ingest or transform data, and it runs separately from the Airflow refresh DAG. The design follows the reference project's component-by-component T2S walkthrough, with this project's semantic catalog, approved aggregate templates, SQLGlot policy boundary, and web result rendering documented explicitly. ([Reference repository](https://github.com/tunguyenn99/a-simple-t2s-flow))
+The T2S service lets an analyst ask questions in Vietnamese or English and receive a query result without writing SQL. It serves the already-built **Gold marts**; it does not ingest or transform data, and it runs separately from the Airflow refresh DAG. Its implementation combines this project's semantic catalog, approved aggregate templates, SQLGlot policy boundary, and web result rendering.
 
 ### Request flow
 
